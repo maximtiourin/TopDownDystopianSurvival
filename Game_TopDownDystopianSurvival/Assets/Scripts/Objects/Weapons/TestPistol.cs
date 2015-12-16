@@ -47,8 +47,8 @@ namespace Weapons {
 			//Animate
 			animControl.PlayAnimation("fire");
 
-			//Ray cast
-			int layermask = 1 << 10;
+            //Ray cast
+            int layermask = LayerMask.GetMask("Obstacle");
 			RaycastHit2D hit = Physics2D.Raycast(rayPos, faceDir, maxProjectileRange, layermask); 
 			if (hit.collider != null) {
 				hit.collider.attachedRigidbody.AddForceAtPosition((hit.point - transform).normalized * hitForce, hit.point);
