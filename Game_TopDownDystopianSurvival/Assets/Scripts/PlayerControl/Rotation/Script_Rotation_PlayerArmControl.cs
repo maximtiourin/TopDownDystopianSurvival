@@ -30,15 +30,15 @@ public class Script_Rotation_PlayerArmControl : MonoBehaviour {
 	private Vector2 leftArmDefaultLocalPos; //The default local position of the left arm
 	private Vector2 rightArmDefaultLocalPos; //The default local position of the right arm
 
-	//Constants
-	private const float delta = .000001f; //Used for determining if a position is close enough
+    //Constants
+    private const float delta = .000001f; //Used for determining if a position is close enough
 	private const float tempRotate = -90f; //Rotational Offset to set sprites to default angle
 
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    void Start () {
 		leftArmDefaultLocalPos = new Vector2(leftArm.localPosition.x, leftArm.localPosition.y);
 		rightArmDefaultLocalPos = new Vector2(rightArm.localPosition.x, rightArm.localPosition.y);
-	}
+    }
 	
 	// Update is called once per frame
 	void Update () {
@@ -56,30 +56,26 @@ public class Script_Rotation_PlayerArmControl : MonoBehaviour {
 			rightArmDesiredRotation = SetRotationTowardMousePosition(rightArm);
 		}
 
-		/* Smoothly Update Rotation
-         * While checking to see if collision with an obstacle occurs,
-         * if it does, do nothing.
+		/* 
+         * Smoothly Update Rotation
          */
 		//Left Arm
 		if (leftArmDesiredRotation.HasValue) {
-
-
-
-			leftArm.rotation = Quaternion.Slerp(leftArm.rotation, leftArmDesiredRotation.Value, Time.deltaTime * rotationSpeed);
+            leftArm.rotation = Quaternion.Slerp(leftArm.rotation, leftArmDesiredRotation.Value, Time.deltaTime * rotationSpeed);
 			leftArmDesiredRotation = null;
 		}
 		if (leftArmDesiredLocalRotation.HasValue) {
-			leftArm.localRotation = Quaternion.Slerp(leftArm.localRotation, leftArmDesiredLocalRotation.Value, Time.deltaTime * rotationSpeed);
+            leftArm.localRotation = Quaternion.Slerp(leftArm.localRotation, leftArmDesiredLocalRotation.Value, Time.deltaTime * rotationSpeed);
 			leftArmDesiredLocalRotation = null;
 		}
 		//Right Arm
 		if (rightArmDesiredRotation.HasValue) {
-			rightArm.rotation = Quaternion.Slerp(rightArm.rotation, rightArmDesiredRotation.Value, Time.deltaTime * rotationSpeed);
-			rightArmDesiredRotation = null;
+            rightArm.rotation = Quaternion.Slerp(rightArm.rotation, rightArmDesiredRotation.Value, Time.deltaTime * rotationSpeed);
+            rightArmDesiredRotation = null;
 		}
 		if (rightArmDesiredLocalRotation.HasValue) {
-			rightArm.localRotation = Quaternion.Slerp(rightArm.localRotation, rightArmDesiredLocalRotation.Value, Time.deltaTime * rotationSpeed);
-			rightArmDesiredLocalRotation = null;
+            rightArm.localRotation = Quaternion.Slerp(rightArm.localRotation, rightArmDesiredLocalRotation.Value, Time.deltaTime * rotationSpeed);
+            rightArmDesiredLocalRotation = null;
 		}
 	}
 
@@ -144,15 +140,6 @@ public class Script_Rotation_PlayerArmControl : MonoBehaviour {
 		}
 	}
 
-    private bool CheckArmForObstacleCollision(Transform arm) {
-        Collider2D col = arm.GetComponent<Collider2D>();
-
-        //int layermask = 
-
-
-        return false;
-    }
-
 	/*
 	 * Returns a quaternion rotation from the pivot of the transform towards the mouse position
 	 */
@@ -195,8 +182,8 @@ public class Script_Rotation_PlayerArmControl : MonoBehaviour {
 	 */
 	void OnDrawGizmosSelected() {
 		/* Helper variables */
-		float lw = 1f; //Mouse Line Width
-		float hlw = lw / 2f; //Half Mouse Line Width
+		const float lw = 1f; //Mouse Line Width
+		const float hlw = lw / 2f; //Half Mouse Line Width
 
 		/* Left Arm */
 		// minAimRangeAway to maxAimRangeAway
