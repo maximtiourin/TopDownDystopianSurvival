@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: e0781e12b13132b45bf09c20fcd34d12
+guid: 9fa2ecd1ff2ad394281dd3bf72c5b76e
 labels:
 - AI
 - Scripting
@@ -20,12 +20,16 @@ PluginImporter:
   isPreloaded: 0
   platformData:
     Any:
-      enabled: 0
+      enabled: 1
       settings: {}
     Editor:
-      enabled: 1
+      enabled: 0
       settings:
         DefaultValueInitialized: true
+    WindowsStoreApps:
+      enabled: 0
+      settings:
+        CPU: AnyCPU
   userData: 
   assetBundleName: 
   assetBundleVariant: 
