@@ -1,7 +1,4 @@
-﻿using System;
-using ClipperLib;
-using Poly2Tri;
-using UnityEngine;
+﻿using UnityEngine;
 
 /**
  * Utility class for converting between the various data types used to represent points between different polygon libraries and Unity
