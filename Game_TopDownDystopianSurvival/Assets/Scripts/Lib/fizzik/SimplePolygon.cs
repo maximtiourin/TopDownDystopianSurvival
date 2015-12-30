@@ -20,6 +20,10 @@ namespace FizzikLib {
             vertices.Add(v);
         }
 
+        public Vector2 getVertex(int index) {
+            return vertices[index];
+        }
+
         public List<Vector2> getVertices() {
             return vertices;
         }
@@ -27,6 +31,8 @@ namespace FizzikLib {
         /**
          * Returns a SimplePolygon containing the vertexes of a BoxCollider2D in world space,
          * taking into account all aspects of its transform.
+         *
+         * Vertex indexing starts at 0 in the bottom left corner, and moves in a clockwise direction
          */
         public static SimplePolygon boxCollider2DToSimplePolygon(BoxCollider2D collider) {
             float top = collider.offset.y + (collider.size.y / 2f);
