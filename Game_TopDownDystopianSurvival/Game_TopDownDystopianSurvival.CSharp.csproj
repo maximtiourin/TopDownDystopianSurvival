@@ -119,6 +119,7 @@
     <Compile Include="Assets\Scripts\PlayerControl\Movement\Script_Movement_TopDown_SixAxis.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Rotation\Script_Rotation_LookAtMouse.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Rotation\Script_Rotation_PlayerArmControl.cs" />
+    <Compile Include="Assets\Scripts\UnitTest\UnitTestWorld.cs" />
     <Compile Include="Assets\Scripts\Utility\Collection.cs" />
     <Compile Include="Assets\Scripts\Utility\Script_SpriteRenderer_GenerateMaterial.cs" />
     <Compile Include="Assets\Scripts\World\Level.cs" />
