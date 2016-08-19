@@ -61,12 +61,6 @@
     <Reference Include="UnityEditor">
       <HintPath>Library\UnityAssemblies\UnityEditor.dll</HintPath>
     </Reference>
-    <Reference Include="RAIN">
-      <HintPath>Assets\ThirdPartyPackages\RAIN\RAIN.dll</HintPath>
-    </Reference>
-    <Reference Include="RAINMetaform">
-      <HintPath>Assets\ThirdPartyPackages\RAIN\RAINMetaform.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Animation\FizzikAnimation.cs" />
@@ -167,16 +161,6 @@
     <Compile Include="Assets\ThirdPartyPackages\Standard Assets\Utility\WaypointProgressTracker.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\ThirdPartyPackages\Movinarc\PackageUninstaller\README.txt" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\Editor\ScriptTemplates\BehaviorTreeTemplate.xml" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\Editor\Shaders\AspectRingShader.shader" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\Editor\Shaders\AspectSphereShader.shader" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\Editor\Shaders\NavMeshColliderShader.shader" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\Editor\Shaders\NavMeshContourShader.shader" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\Editor\Shaders\VisualSensorLineShader.shader" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\Editor\Shaders\VisualSensorRingShader.shader" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\Editor\Shaders\WaypointShader.shader" />
-    <None Include="Assets\ThirdPartyPackages\RAIN\ReleaseNotes.txt" />
     <None Include="Assets\ThirdPartyPackages\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
