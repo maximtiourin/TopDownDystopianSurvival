@@ -19,11 +19,11 @@ public class Script_Movement_TopDown_SixAxis : MonoBehaviour {
 	void FixedUpdate() {
 		Rigidbody2D body = GetComponent<Rigidbody2D>();
 
-		bool vertical = Input.GetAxis("Vertical") != 0f;
-		bool horizontal = Input.GetAxis("Horizontal") != 0f;
+        float ax = Input.GetAxis("Horizontal");
+        float ay = Input.GetAxis("Vertical");
 
-		float ax = Input.GetAxis("Horizontal");
-		float ay = Input.GetAxis("Vertical");
+        bool horizontal = ax != 0f;
+        bool vertical = ay != 0f;
 
 		if (horizontal && vertical) {
 			ax *= scalarDiagonal;
