@@ -6,8 +6,8 @@ public class Level : MonoBehaviour {
     private int width = 256;
     private int height = 256;
 
-    private int regionWidth = 16;
-    private int regionHeight = 16;
+    public static readonly int regionWidth = 16;
+    public static readonly int regionHeight = 16;
 
     private int regionColumns;
     private int regionRows;
@@ -25,7 +25,8 @@ public class Level : MonoBehaviour {
         regionColumns = width / regionWidth;
         regionRows = height / regionHeight;
 
-        regions = new Region[regionColumns, regionRows]; 
+        regions = new Region[regionColumns, regionRows];
+        initRegions();
 
         chunkMap = new Dictionary<ulong, Chunk>();
 
@@ -46,14 +47,27 @@ public class Level : MonoBehaviour {
         return Tile.getIsWall(tiles[x, y]);
     }
 
+    public bool isObstacleAtRegionPosition(Region region, int x, int y) {
+        return isObstacleAtGridPosition((region.getWidth() * region.getColumn()) + x, (region.getHeight() * region.getRow()) + y);
+    }
+
     //TODO
     public void generateLevel() {
-        //TODO Generate Tiles
+        //TODO Generate Tiles --Temporary gen
         
+
         //TODO Generate all Entities
 
         //Generate Regions
 
+    }
+
+    public void initRegions() {
+        for (int c = 0; c < regionColumns; c++) {
+            for (int r = 0; r < regionRows; r++) {
+                regions[c, r] = new Region(this, regionWidth, regionHeight, c, r);
+            }
+        }
     }
 
     public Dictionary<ulong, Chunk> getChunkMap() {
