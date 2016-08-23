@@ -1,6 +1,15 @@
-﻿using System.Collections;
+﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public static class Tile {
+    private static ushort tileid = 0;
+    public static Dictionary<string, ushort> tileids; //Mapping of string tile identifiers to numerical tile ids, expected to be in the range of (2^8 - 1)
+
+    public static Dictionary<ushort, TileData> tileData;
+
+    public static bool generated = false;
+
     /*
      | Tile bit structure (ushort)
      | 0000     0000    0000    0000
@@ -10,12 +19,18 @@ public static class Tile {
      */
     public static readonly ushort       maskIsWall      =   1;
     public static readonly byte         shiftIsWall     =   0;
-    public static readonly ushort       maskTileId      =   binaryToUshort("1111111100000000");
-    public static readonly byte         shiftTileId     =   8;
+    public static readonly ushort       maskTileID      =   binaryToUShort("1111111100000000");
+    public static readonly byte         shiftTileID     =   8;
+
+    public static ushort generateTileID() {
+        ushort id = tileid;
+        tileid = (ushort) (tileid + 1);
+        return id;
+    }
 
     public static ushort getTileId(ushort tile) {
-        ushort res = (ushort) (tile & maskTileId);
-        res = (ushort) (res >> shiftTileId);
+        ushort res = (ushort) (tile & maskTileID);
+        res = (ushort) (res >> shiftTileID);
         return res;
     }
 
@@ -23,9 +38,9 @@ public static class Tile {
         ushort tile = aTile;
         ushort tileid = aTileid;
 
-        ushort inverse = (ushort) (~maskTileId);
+        ushort inverse = (ushort) (~maskTileID);
         ushort memory = (ushort) (tile & inverse);
-        ushort shift = (ushort) (tileid << shiftTileId);
+        ushort shift = (ushort) (tileid << shiftTileID);
 
         return (ushort) (shift | memory);
     }
@@ -47,7 +62,19 @@ public static class Tile {
         return (ushort) (shift | memory);
     }
 
-    public static ushort binaryToUshort(string binary) {
+    public static ushort binaryToUShort(string binary) {
         return System.Convert.ToUInt16(binary, 2);
+    }
+
+    public static uint binaryToUInt(string binary) {
+        return System.Convert.ToUInt32(binary, 2);
+    }
+
+    public static TileData getTileDataForTileID(ushort tileid) {
+        return tileData[tileid];
+    }
+
+    public static ushort nameToTileID(string name) {
+        return tileids[name];
     }
 }

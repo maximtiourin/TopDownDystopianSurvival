@@ -85,7 +85,6 @@ public class Region {
     private void calculateRegion() {
         //First clean up all region data in preparation for new calculations
         initNodes();
-
         chunks.Clear();
         fillChunkMap.Clear();
         resetFillID();

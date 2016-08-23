@@ -13,24 +13,24 @@ public class UnitTestWorld : MonoBehaviour {
          * ----------------------------------------------------------------------*/
 
         //Tile.getTileId
-        ushort testtile = Tile.binaryToUshort("1010101001100110");
-        ushort cmp = Tile.binaryToUshort("10101010");
+        ushort testtile = Tile.binaryToUShort("1010101001100110");
+        ushort cmp = Tile.binaryToUShort("10101010");
         Assert.AreEqual(cmp, Tile.getTileId(testtile));
 
         //Tile.setTileId
-        testtile = Tile.binaryToUshort("1010101001100110");
+        testtile = Tile.binaryToUShort("1010101001100110");
         ushort tileid = (ushort) 1;
-        cmp = Tile.binaryToUshort("0000000101100110");
+        cmp = Tile.binaryToUShort("0000000101100110");
         Assert.AreEqual(cmp, Tile.setTileId(testtile, tileid));
 
         //Tile.getIsWall
-        testtile = Tile.binaryToUshort("1010101001100110");
+        testtile = Tile.binaryToUShort("1010101001100110");
         Assert.IsFalse(Tile.getIsWall(testtile));
-        testtile = Tile.binaryToUshort("1010101001100111");
+        testtile = Tile.binaryToUShort("1010101001100111");
         Assert.IsTrue(Tile.getIsWall(testtile));
 
         //Tile.setIsWall
-        testtile = Tile.binaryToUshort("1010101001100110");
+        testtile = Tile.binaryToUShort("1010101001100110");
         Assert.IsFalse(Tile.getIsWall(Tile.setIsWall(testtile, false)));
         Assert.IsTrue(Tile.getIsWall(Tile.setIsWall(testtile, true)));
 

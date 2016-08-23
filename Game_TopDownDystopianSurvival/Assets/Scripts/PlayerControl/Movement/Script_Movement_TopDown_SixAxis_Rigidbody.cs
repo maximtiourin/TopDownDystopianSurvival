@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Script_Movement_TopDown_SixAxis : MonoBehaviour {
+public class Script_Movement_TopDown_SixAxis_Rigidbody : MonoBehaviour {
 	public float scalarMovementSpeed = 1f;
 
 	private float scalarDiagonal = .7071f;
