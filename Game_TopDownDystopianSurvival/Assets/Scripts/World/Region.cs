@@ -95,7 +95,7 @@ public class Region {
         if (isValidNodeIndex(x, y)) {
             Node root = nodes[x, y];
 
-            if (isValidBFSNode(root)) {
+            if (isNodeUnvisited(root) && !isNodeObstacle(root)) {
                 Queue<Node> queue = new Queue<Node>();
 
                 int fill = generateFillID();
@@ -121,7 +121,7 @@ public class Region {
                                 if (isValidNodeIndex(nx, ny)) {
                                     Node neighbor = nodes[nx, ny];
 
-                                    if (isValidBFSNode(neighbor)) {
+                                    if (isNodeUnvisited(neighbor) && !isNodeObstacle(neighbor)) {
                                         queue.Enqueue(neighbor);
                                     }
                                 }
@@ -137,8 +137,23 @@ public class Region {
         }
     }
 
-    private bool isValidBFSNode(Node node) {
-        return node.fillID != Node.OBSTACLE && !level.isObstacleAtRegionPosition(this, node.x, node.y);
+    private bool isNodeUnvisited(Node node) {
+        return node.fillID == Node.UNVISITED;
+    }
+
+    private bool isNodeObstacle(Node node) {
+        if (node.fillID == Node.OBSTACLE) {
+            return true;
+        }
+        else {
+            if (level.isObstacleAtRegionPosition(this, node.x, node.y)) {
+                node.fillID = Node.OBSTACLE;
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
     }
 
     private bool isValidNodeIndex(int x, int y) {
