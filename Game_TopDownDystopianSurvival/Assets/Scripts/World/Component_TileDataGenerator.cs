@@ -9,12 +9,16 @@ using System;
  */
 public class Component_TileDataGenerator : MonoBehaviour, Loadable {
     public static string BLANK = "";
+    public static int TILEABLE_WIDTH = 4;
+    public static int TILEABLE_HEIGHT = 4;
+    public static int TILEABLE_PIXELS = 64;
 
     [Serializable]
     public class Data {
         public string name;
         public bool isTileable;
         public Sprite sprite;
+        public Texture2D sprites;
         public Shader shader;
         public Color mainColor;
         public bool isNormalMapped;
@@ -27,6 +31,7 @@ public class Component_TileDataGenerator : MonoBehaviour, Loadable {
             name = BLANK;
             isTileable = false;
             sprite = null;
+            sprites = null;
             shader = null;
             mainColor = new Color(1f, 1f, 1f);
             isNormalMapped = false;
@@ -62,6 +67,7 @@ public class Component_TileDataGenerator : MonoBehaviour, Loadable {
         Data ndata = new Data();
         ndata.isTileable = data.isTileable;
         ndata.sprite = data.sprite;
+        ndata.sprites = data.sprites;
         ndata.shader = data.shader;
         ndata.mainColor = data.mainColor;
         ndata.isNormalMapped = data.isNormalMapped;
@@ -108,9 +114,17 @@ public class Component_TileDataGenerator : MonoBehaviour, Loadable {
                         data.isNormalMapped, data.normalMap, data.isShiny, data.shininess, data.specularColor);
 
                     Sprite sprite = data.sprite;
+                    Sprite[] sprites = new Sprite[TILEABLE_WIDTH * TILEABLE_HEIGHT];
+
+                    for (int x = 0; x < TILEABLE_WIDTH; x++) {
+                        for (int y = 0; y < TILEABLE_HEIGHT; y++) {
+                            Sprite spr = Sprite.Create(data.sprites, new Rect(x * TILEABLE_PIXELS, y * TILEABLE_PIXELS, TILEABLE_PIXELS, TILEABLE_PIXELS), new Vector2(0, 0), TILEABLE_PIXELS);
+                            sprites[y * TILEABLE_WIDTH + x] = spr;
+                        }
+                    }
 
                     Tile.tileids.Add(data.name, tileid);
-                    Tile.tileData.Add(tileid, new TileData(tileid, data.name, data.isTileable, material, sprite));
+                    Tile.tileData.Add(tileid, new TileData(tileid, data.name, data.isTileable, material, sprite, sprites));
                 }
             }
 

@@ -227,7 +227,12 @@ public class EditorScript_Component_TileDataGenerator : Editor {
                     GUILayout.BeginVertical();
 
                     GUILayout.Label("Sprite");
-                    data.sprite = (Sprite) EditorGUILayout.ObjectField(data.sprite, typeof(Sprite), false, GUILayout.Width(zoomwidth), GUILayout.Height(zoomheight));
+                    if (data.isTileable) {
+                        data.sprites = (Texture2D) EditorGUILayout.ObjectField(data.sprites, typeof(Texture2D), false, GUILayout.Width(zoomwidth), GUILayout.Height(zoomheight));
+                    }
+                    else {
+                        data.sprite = (Sprite) EditorGUILayout.ObjectField(data.sprite, typeof(Sprite), false, GUILayout.Width(zoomwidth), GUILayout.Height(zoomheight));
+                    }
 
                     GUILayout.EndVertical();
 

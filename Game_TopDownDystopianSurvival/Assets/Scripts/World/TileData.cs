@@ -10,12 +10,14 @@ public class TileData {
     public bool isTileable;
     public Material material;
     public Sprite sprite;
+    public Sprite[] sprites;
 
-    public TileData(uint tileid, string name, bool isTileable, Material material, Sprite sprite) {
+    public TileData(uint tileid, string name, bool isTileable, Material material, Sprite sprite, Sprite[] sprites) {
         this.tileid = tileid;
         this.name = name;
         this.isTileable = isTileable;
         this.material = material;
         this.sprite = sprite;
+        this.sprites = sprites;
     }
 }

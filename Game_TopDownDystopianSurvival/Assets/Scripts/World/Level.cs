@@ -61,6 +61,10 @@ public class Level : MonoBehaviour, Loadable {
         return isObstacleAtGridPosition((region.getWidth() * region.getColumn()) + x, (region.getHeight() * region.getRow()) + y);
     }
 
+    public bool isValidTilePosition(int x, int y) {
+        return ((x >= 0 && x < width) && (y >= 0 && y < height));
+    }
+
     //TODO
     private void generateLevel() {
         //TODO Generate Tiles --Temporary gen        
@@ -102,9 +106,66 @@ public class Level : MonoBehaviour, Loadable {
 
         tile = tiles[0, 0];
         tile = Tile.setIsWall(tile, true);
-        tile = Tile.setTileId(tile, test01.tileid);
-        tile = Tile.setIsTileable(tile, test01.isTileable);
+        tile = Tile.setTileId(tile, test02.tileid);
+        tile = Tile.setIsTileable(tile, test02.isTileable);
         tiles[0, 0] = tile;
+        tile = tiles[1, 1];
+        tile = Tile.setIsWall(tile, true);
+        tile = Tile.setTileId(tile, test02.tileid);
+        tile = Tile.setIsTileable(tile, test02.isTileable);
+        tiles[1, 1] = tile;
+        tile = tiles[1, 0];
+        tile = Tile.setIsWall(tile, true);
+        tile = Tile.setTileId(tile, test02.tileid);
+        tile = Tile.setIsTileable(tile, test02.isTileable);
+        tiles[1, 0] = tile;
+    }
+
+    //TODO Temp testing of tileability calculation, eventually can be used to efficiently do the first pass calculation of tileability
+    // When modifying tileability during normal runtime, it should be done only for tiles which have been modified.
+    private void calculateTiling() {
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                uint tile = tiles[x, y];
+
+                if (Tile.getIsWall(tile)) {
+                    if (x + 1 < width) {
+                        uint cmp = tiles[x + 1, y];
+
+                        if (Tile.getIsWall(cmp)) {
+                            uint tilebit = Tile.getTileBitwise(tile);
+                            uint cmpbit = Tile.getTileBitwise(cmp);
+
+                            tilebit = tilebit | 8;
+                            cmpbit = cmpbit | 2;
+
+                            tile = Tile.setTileBitwise(tile, tilebit);
+                            cmp = Tile.setTileBitwise(cmp, cmpbit);
+
+                            tiles[x, y] = tile;
+                            tiles[x + 1, y] = cmp;
+                        }
+                    }
+                    if (y + 1 < width) {
+                        uint cmp = tiles[x, y + 1];
+
+                        if (Tile.getIsWall(cmp)) {
+                            uint tilebit = Tile.getTileBitwise(tile);
+                            uint cmpbit = Tile.getTileBitwise(cmp);
+
+                            tilebit = tilebit | 1;
+                            cmpbit = cmpbit | 4;
+
+                            tile = Tile.setTileBitwise(tile, tilebit);
+                            cmp = Tile.setTileBitwise(cmp, cmpbit);
+
+                            tiles[x, y] = tile;
+                            tiles[x, y + 1] = cmp;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /*
@@ -127,10 +188,17 @@ public class Level : MonoBehaviour, Loadable {
                 uint tile = tiles[x, y];
 
                 uint tileid = Tile.getTileId(tile);
+                uint bitwise = Tile.getTileBitwise(tile);
 
                 TileData data = Tile.getTileDataForTileID(tileid);
 
-                rend.sprite = data.sprite;
+                if (data.isTileable) {
+                    rend.sprite = data.sprites[bitwise];
+                }
+                else {
+                    rend.sprite = data.sprite;
+                }
+
                 rend.sharedMaterial = data.material;
 
                 renderTile.name = "RenderTile_" + x + "_" + y;
@@ -152,6 +220,7 @@ public class Level : MonoBehaviour, Loadable {
 
     public void load() {
         generateLevel();
+        calculateTiling();
         generateRenderTiles();
 
         loaded = true;
