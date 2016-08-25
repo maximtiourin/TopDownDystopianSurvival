@@ -14,7 +14,7 @@ public class Level : MonoBehaviour, Loadable {
 
     private Region[,] regions;
 
-    private ushort[,] tiles;
+    private uint[,] tiles;
 
     private GameObject renderTilesContainer;
     private GameObject[,] renderTiles;
@@ -29,7 +29,7 @@ public class Level : MonoBehaviour, Loadable {
         regions = new Region[regionColumns, regionRows];
         initRegions();
 
-        tiles = new ushort[width, height];
+        tiles = new uint[width, height];
 
         renderTilesContainer = null;
         renderTiles = new GameObject[width, height];
@@ -74,14 +74,19 @@ public class Level : MonoBehaviour, Loadable {
 
     //TODO testing generation currently
     private void generateTiles() {
-        ushort tile;
+        uint tile;
+
+        //TODO Tile Cache - Eventually implement a more global tile caching system
+        TileData test01 = Tile.getTileDataForTileID(Tile.nameToTileID("test01"));
+        TileData test02 = Tile.getTileDataForTileID(Tile.nameToTileID("test02"));
 
         //Floors
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 tile = tiles[x, y];
                 tile = Tile.setIsWall(tile, false);
-                tile = Tile.setTileId(tile, Tile.nameToTileID("test01"));
+                tile = Tile.setTileId(tile, test01.tileid);
+                tile = Tile.setIsTileable(tile, test01.isTileable);
                 tiles[x, y] = tile;
             }
         }
@@ -90,13 +95,15 @@ public class Level : MonoBehaviour, Loadable {
         for (int x = (width / 2) - (width / 4); x < (width / 2) + (width / 4); x++) {
             tile = tiles[x, height / 2];
             tile = Tile.setIsWall(tile, true);
-            tile = Tile.setTileId(tile, Tile.nameToTileID("test02"));
+            tile = Tile.setTileId(tile, test02.tileid);
+            tile = Tile.setIsTileable(tile, test02.isTileable);
             tiles[x, height / 2] = tile;
         }
 
         tile = tiles[0, 0];
         tile = Tile.setIsWall(tile, true);
-        tile = Tile.setTileId(tile, Tile.nameToTileID("test02"));
+        tile = Tile.setTileId(tile, test01.tileid);
+        tile = Tile.setIsTileable(tile, test01.isTileable);
         tiles[0, 0] = tile;
     }
 
@@ -117,9 +124,9 @@ public class Level : MonoBehaviour, Loadable {
                 GameObject renderTile = new GameObject();
                 SpriteRenderer rend = renderTile.AddComponent<SpriteRenderer>();
 
-                ushort tile = tiles[x, y];
+                uint tile = tiles[x, y];
 
-                ushort tileid = Tile.getTileId(tile);
+                uint tileid = Tile.getTileId(tile);
 
                 TileData data = Tile.getTileDataForTileID(tileid);
 
