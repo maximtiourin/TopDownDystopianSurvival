@@ -136,7 +136,7 @@ public class EditorScript_Component_TileDataGenerator : Editor {
                 if (foldTile[i]) {
                     GUILayout.BeginVertical();
 
-                    //Name / TextField / Copy Button / Reset to Default Button / Delete Button
+                    //Name / TextField / Tileable Toggle / Copy Button / Reset to Default Button / Delete Button
                     GUILayout.BeginHorizontal();
 
                     GUILayout.Space(8);
@@ -145,10 +145,12 @@ public class EditorScript_Component_TileDataGenerator : Editor {
 
                     data.name = EditorGUILayout.DelayedTextField(data.name, GUILayout.Width(200));
 
-                    GUILayout.FlexibleSpace();
-
                     //Display mutate buttons when none have been clicked
                     if (!mutateEnabled(i)) {
+                        data.isTileable = GUILayout.Toggle(data.isTileable, "Tileable", GUILayout.ExpandWidth(false));
+
+                        GUILayout.FlexibleSpace();
+
                         if (zoomButton[i]) {
                             if (GUILayout.Button(texReduce, styleFullImageBtn, GUILayout.Width(22), GUILayout.Height(22))) {
                                 zoomButton[i] = false;
@@ -181,6 +183,8 @@ public class EditorScript_Component_TileDataGenerator : Editor {
 
                     //Display mutate buttons when one has been clicked
                     if (mutateButton[MUTATE_DEFAULT, i]) {
+                        GUILayout.FlexibleSpace();
+
                         GUILayout.Label("Reset to Default?", GUILayout.ExpandWidth(false));
 
                         if (GUILayout.Button("Yes", GUILayout.Width(44), GUILayout.Height(22))) {
@@ -194,6 +198,8 @@ public class EditorScript_Component_TileDataGenerator : Editor {
                     }
 
                     if (mutateButton[MUTATE_DELETE, i]) {
+                        GUILayout.FlexibleSpace();
+
                         GUILayout.Label("Delete?", GUILayout.ExpandWidth(false));
 
                         if (GUILayout.Button("Yes", GUILayout.Width(44), GUILayout.Height(22))) {
