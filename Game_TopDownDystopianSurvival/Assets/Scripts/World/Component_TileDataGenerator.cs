@@ -110,7 +110,7 @@ public class Component_TileDataGenerator : MonoBehaviour, Loadable {
                     Sprite sprite = data.sprite;
 
                     Tile.tileids.Add(data.name, tileid);
-                    Tile.tileData.Add(tileid, new TileData(tileid, name, data.isTileable, material, sprite));
+                    Tile.tileData.Add(tileid, new TileData(tileid, data.name, data.isTileable, material, sprite));
                 }
             }
 
