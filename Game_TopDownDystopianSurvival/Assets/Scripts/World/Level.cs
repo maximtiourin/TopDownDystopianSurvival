@@ -371,6 +371,10 @@ public class Level : MonoBehaviour, Loadable {
         }
     }
 
+    public uint getTileAtPosition(int x, int y) {
+        return tiles[x, y];
+    }
+
     private void initRegions() {
         for (int c = 0; c < regionColumns; c++) {
             for (int r = 0; r < regionRows; r++) {

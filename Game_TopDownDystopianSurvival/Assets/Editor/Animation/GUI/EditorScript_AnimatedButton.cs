@@ -38,7 +38,7 @@ public class EditorScript_AnimatedButton : Editor {
             colorBlock.pressedColor = EditorGUILayout.ColorField("Pressed Color", btn.colors.pressedColor);
             colorBlock.disabledColor = EditorGUILayout.ColorField("Disabled Color", btn.colors.disabledColor);
             colorBlock.colorMultiplier = EditorGUILayout.Slider("Color Multiplier", btn.colors.colorMultiplier, 1f, 5f);
-            colorBlock.fadeDuration = EditorGUILayout.FloatField("Fade Duration", btn.colors.fadeDuration);
+            colorBlock.fadeDuration = EditorGUILayout.DelayedFloatField("Fade Duration", btn.colors.fadeDuration);
             btn.colors = colorBlock;
         }
         if (btn.transition == Selectable.Transition.SpriteSwap) {
