@@ -46,6 +46,8 @@ public class EditorScript_Component_TileDataGenerator : Editor {
         Texture texCopy = Resources.Load<Texture>("inspectorbutton_copy");
         Texture texMagnify = Resources.Load<Texture>("inspectorbutton_magnify");
         Texture texReduce = Resources.Load<Texture>("inspectorbutton_reduce");
+        Texture texUpArrow = Resources.Load<Texture>("inspectorbutton_uparrow");
+        Texture texDownArrow = Resources.Load<Texture>("inspectorbutton_downarrow");
 
         /* Styles */
         //Full Image Button
@@ -143,13 +145,28 @@ public class EditorScript_Component_TileDataGenerator : Editor {
 
                     GUILayout.Label("Name", GUILayout.ExpandWidth(false));
 
-                    data.name = EditorGUILayout.DelayedTextField(data.name, GUILayout.Width(200));
+                    data.name = EditorGUILayout.DelayedTextField(data.name, GUILayout.Width(160));
 
                     //Display mutate buttons when none have been clicked
                     if (!mutateEnabled(i)) {
                         data.isTileable = GUILayout.Toggle(data.isTileable, "Tileable", GUILayout.ExpandWidth(false));
 
                         GUILayout.FlexibleSpace();
+
+                        if (i > 0) {
+                            if (GUILayout.Button(texUpArrow, styleFullImageBtn, GUILayout.Width(22), GUILayout.Height(22))) {
+                                gen.swapData(data, gen.tileset[i - 1]);
+                            }
+                        }
+
+                        if (i < gen.tileset.Length - 1) {
+                            if (GUILayout.Button(texDownArrow, styleFullImageBtn, GUILayout.Width(22), GUILayout.Height(22))) {
+                                gen.swapData(data, gen.tileset[i + 1]);
+                            }
+                        }
+                        else {
+                            GUILayout.Space(22);
+                        }
 
                         if (zoomButton[i]) {
                             if (GUILayout.Button(texReduce, styleFullImageBtn, GUILayout.Width(22), GUILayout.Height(22))) {

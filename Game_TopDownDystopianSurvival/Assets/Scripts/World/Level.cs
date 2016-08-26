@@ -121,49 +121,11 @@ public class Level : MonoBehaviour, Loadable {
         tiles[1, 0] = tile;
     }
 
-    //TODO Temp testing of tileability calculation, eventually can be used to efficiently do the first pass calculation of tileability
-    // When modifying tileability during normal runtime, updateTilingForTile should be used instead on a per tile basis
+    //Updates tiling for all tiles, very expensive call, instead update tiling for individual tiles or clusters when possible
     private void calculateTiling() {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                uint tile = tiles[x, y];
-
-                if (Tile.getIsTileable(tile)) {
-                    if (x + 1 < width) {
-                        uint cmp = tiles[x + 1, y];
-
-                        if (isTilingCompatible(tile, cmp)) {
-                            uint tilebit = Tile.getTileBitwise(tile);
-                            uint cmpbit = Tile.getTileBitwise(cmp);
-
-                            tilebit = tilebit | 8;
-                            cmpbit = cmpbit | 2;
-
-                            tile = Tile.setTileBitwise(tile, tilebit);
-                            cmp = Tile.setTileBitwise(cmp, cmpbit);
-
-                            tiles[x, y] = tile;
-                            tiles[x + 1, y] = cmp;
-                        }
-                    }
-                    if (y + 1 < height) {
-                        uint cmp = tiles[x, y + 1];
-
-                        if (isTilingCompatible(tile, cmp)) {
-                            uint tilebit = Tile.getTileBitwise(tile);
-                            uint cmpbit = Tile.getTileBitwise(cmp);
-
-                            tilebit = tilebit | 1;
-                            cmpbit = cmpbit | 4;
-
-                            tile = Tile.setTileBitwise(tile, tilebit);
-                            cmp = Tile.setTileBitwise(cmp, cmpbit);
-
-                            tiles[x, y] = tile;
-                            tiles[x, y + 1] = cmp;
-                        }
-                    }
-                }
+                updateTilingForTile(x, y);
             }
         }
     }
@@ -173,57 +135,101 @@ public class Level : MonoBehaviour, Loadable {
             uint tile = tiles[x, y];
 
             tile = Tile.setTileBitwise(tile, 0);
+            tile = Tile.setTileCornerBitwise(tile, 0);
+
+            tiles[x, y] = tile;
 
             if (Tile.getIsTileable(tile)) {
-                if (y + 1 < height) {
+                bool up = y + 1 < height;
+                bool left = x - 1 >= 0;
+                bool down = y - 1 >= 0;
+                bool right = x + 1 < width;
+
+                /*
+                 * Check Regular Neighbors
+                 */
+                if (up) {
                     uint cmp = tiles[x, y + 1];
 
                     if (isTilingCompatible(tile, cmp)) {
                         uint tilebit = Tile.getTileBitwise(tile);
-
                         tilebit = tilebit | 1;
-
                         tile = Tile.setTileBitwise(tile, tilebit);
-
                         tiles[x, y] = tile;
                     }
                 }
-                if (y - 1 >= 0) {
+                if (down) {
                     uint cmp = tiles[x, y - 1];
 
                     if (isTilingCompatible(tile, cmp)) {
                         uint tilebit = Tile.getTileBitwise(tile);
-
                         tilebit = tilebit | 4;
-
                         tile = Tile.setTileBitwise(tile, tilebit);
-
                         tiles[x, y] = tile;
                     }
                 }
-                if (x - 1 >= 0) {
+                if (left) {
                     uint cmp = tiles[x - 1, y];
 
                     if (isTilingCompatible(tile, cmp)) {
                         uint tilebit = Tile.getTileBitwise(tile);
-
                         tilebit = tilebit | 2;
-
                         tile = Tile.setTileBitwise(tile, tilebit);
-
                         tiles[x, y] = tile;
                     }
                 }
-                if (x + 1 < width) {
+                if (right) {
                     uint cmp = tiles[x + 1, y];
 
                     if (isTilingCompatible(tile, cmp)) {
                         uint tilebit = Tile.getTileBitwise(tile);
-
                         tilebit = tilebit | 8;
-
                         tile = Tile.setTileBitwise(tile, tilebit);
+                        tiles[x, y] = tile;
+                    }
+                }
 
+                /*
+                 * Check Corners only if needed
+                 */
+                uint bitwise = Tile.getTileBitwise(tile);
+                if ((bitwise & 3) == 3 && up && left) {
+                    uint cmp = tiles[x - 1, y + 1];
+
+                    if (isTilingCompatible(tile, cmp)) {
+                        uint cornerbit = Tile.getTileCornerBitwise(tile);
+                        cornerbit = cornerbit | 1;
+                        tile = Tile.setTileCornerBitwise(tile, cornerbit);
+                        tiles[x, y] = tile;
+                    }
+                }
+                if ((bitwise & 6) == 6 && down && left) {
+                    uint cmp = tiles[x - 1, y - 1];
+
+                    if (isTilingCompatible(tile, cmp)) {
+                        uint cornerbit = Tile.getTileCornerBitwise(tile);
+                        cornerbit = cornerbit | 2;
+                        tile = Tile.setTileCornerBitwise(tile, cornerbit);
+                        tiles[x, y] = tile;
+                    }
+                }
+                if ((bitwise & 12) == 12 && down && right) {
+                    uint cmp = tiles[x + 1, y - 1];
+
+                    if (isTilingCompatible(tile, cmp)) {
+                        uint cornerbit = Tile.getTileCornerBitwise(tile);
+                        cornerbit = cornerbit | 4;
+                        tile = Tile.setTileCornerBitwise(tile, cornerbit);
+                        tiles[x, y] = tile;
+                    }
+                }
+                if ((bitwise & 9) == 9 && up && right) {
+                    uint cmp = tiles[x + 1, y + 1];
+
+                    if (isTilingCompatible(tile, cmp)) {
+                        uint cornerbit = Tile.getTileCornerBitwise(tile);
+                        cornerbit = cornerbit | 8;
+                        tile = Tile.setTileCornerBitwise(tile, cornerbit);
                         tiles[x, y] = tile;
                     }
                 }
@@ -231,15 +237,20 @@ public class Level : MonoBehaviour, Loadable {
         }
     }
 
-    //A cluster is the tile located at x,y as well as the neighbor tiles up, down, left, and right of that tile
+    //A cluster is the tile located at x,y as well as the neighbor corners and tiles up, down, left, and right of that tile
     public void updateTilingForTileClusterAtPosition(int x, int y) {
-        updateTilingForTile(x, y);
+        updateTilingForTile(x - 1, y + 1);
         updateTilingForTile(x, y + 1);
-        updateTilingForTile(x, y - 1);
+        updateTilingForTile(x + 1, y + 1);
         updateTilingForTile(x + 1, y);
+        updateTilingForTile(x + 1, y - 1);
+        updateTilingForTile(x, y - 1);
+        updateTilingForTile(x - 1, y - 1);
         updateTilingForTile(x - 1, y);
+        updateTilingForTile(x, y);
     }
 
+    //TODO handles all tileables cases to make sure that two tileable tiles actually want to tile with each other
     private bool isTilingCompatible(uint tileA, uint tileB) {
         if (Tile.getIsWall(tileA) && Tile.getIsWall(tileB)) {
             return true;
@@ -249,10 +260,9 @@ public class Level : MonoBehaviour, Loadable {
         }
     }
 
-    public void createFloorTileAtPosition(int x, int y, string floortype) {
+    public void createFloorTileAtPosition(int x, int y, uint tileid) {
         if (isValidTilePosition(x, y)) {
             uint tile = 0;
-            uint tileid = Tile.nameToTileID(floortype);
 
             TileData data = Tile.getTileDataForTileID(tileid);
 
@@ -268,10 +278,13 @@ public class Level : MonoBehaviour, Loadable {
         }
     }
 
-    public void createWallTileAtPosition(int x, int y, string walltype) {
+    public void createFloorTileAtPosition(int x, int y, string floortype) {
+        createFloorTileAtPosition(x, y, Tile.nameToTileID(floortype));
+    }
+
+    public void createWallTileAtPosition(int x, int y, uint tileid) {
         if (isValidTilePosition(x, y)) {
             uint tile = 0;
-            uint tileid = Tile.nameToTileID(walltype);
 
             TileData data = Tile.getTileDataForTileID(tileid);
 
@@ -287,6 +300,10 @@ public class Level : MonoBehaviour, Loadable {
         }
     }
 
+    public void createWallTileAtPosition(int x, int y, string walltype) {
+        createWallTileAtPosition(x, y, Tile.nameToTileID(walltype));
+    }
+
     public void updateRenderTileAtPosition(int x, int y) {
         if (isValidTilePosition(x, y)) {
             GameObject renderTile = renderTiles[x, y];
@@ -296,11 +313,12 @@ public class Level : MonoBehaviour, Loadable {
 
             uint tileid = Tile.getTileId(tile);
             uint bitwise = Tile.getTileBitwise(tile);
+            uint cornerbitwise = Tile.getTileCornerBitwise(tile);
 
             TileData data = Tile.getTileDataForTileID(tileid);
 
             if (data.isTileable) {
-                rend.sprite = data.sprites[bitwise];
+                rend.sprite = Tile.createDynamicFillSprite(tileid, data.sprites[bitwise], data.fillColor, bitwise, cornerbitwise);
             }
             else {
                 rend.sprite = data.sprite;
@@ -310,13 +328,17 @@ public class Level : MonoBehaviour, Loadable {
         }
     }
 
-    //A cluster is the tile located at x,y as well as the neighbor tiles up, down, left, and right of that tile
+    //A cluster is the tile located at x,y as well as the neighbor corners and tiles up, down, left, and right of that tile
     public void updateRenderTilesForTileClusterAtPosition(int x, int y) {
-        updateRenderTileAtPosition(x, y);
+        updateRenderTileAtPosition(x - 1, y + 1);
         updateRenderTileAtPosition(x, y + 1);
-        updateRenderTileAtPosition(x, y - 1);
+        updateRenderTileAtPosition(x + 1, y + 1);
         updateRenderTileAtPosition(x + 1, y);
+        updateRenderTileAtPosition(x + 1, y - 1);
+        updateRenderTileAtPosition(x, y - 1);
+        updateRenderTileAtPosition(x - 1, y - 1);
         updateRenderTileAtPosition(x - 1, y);
+        updateRenderTileAtPosition(x, y);
     }
 
     /*
@@ -336,22 +358,6 @@ public class Level : MonoBehaviour, Loadable {
                 GameObject renderTile = new GameObject();
                 SpriteRenderer rend = renderTile.AddComponent<SpriteRenderer>();
 
-                uint tile = tiles[x, y];
-
-                uint tileid = Tile.getTileId(tile);
-                uint bitwise = Tile.getTileBitwise(tile);
-
-                TileData data = Tile.getTileDataForTileID(tileid);
-
-                if (data.isTileable) {
-                    rend.sprite = data.sprites[bitwise];
-                }
-                else {
-                    rend.sprite = data.sprite;
-                }
-
-                rend.sharedMaterial = data.material;
-
                 renderTile.name = "RenderTile_" + x + "_" + y;
 
                 renderTile.transform.parent = renderTilesContainer.transform;
@@ -359,6 +365,8 @@ public class Level : MonoBehaviour, Loadable {
                 renderTile.transform.localPosition = new Vector3(x, y, 0f);
 
                 renderTiles[x, y] = renderTile;
+
+                updateRenderTileAtPosition(x, y);
             }
         }
     }
