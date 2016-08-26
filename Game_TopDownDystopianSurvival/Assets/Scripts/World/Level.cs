@@ -122,17 +122,17 @@ public class Level : MonoBehaviour, Loadable {
     }
 
     //TODO Temp testing of tileability calculation, eventually can be used to efficiently do the first pass calculation of tileability
-    // When modifying tileability during normal runtime, it should be done only for tiles which have been modified.
+    // When modifying tileability during normal runtime, updateTilingForTile should be used instead on a per tile basis
     private void calculateTiling() {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 uint tile = tiles[x, y];
 
-                if (Tile.getIsWall(tile)) {
+                if (Tile.getIsTileable(tile)) {
                     if (x + 1 < width) {
                         uint cmp = tiles[x + 1, y];
 
-                        if (Tile.getIsWall(cmp)) {
+                        if (isTilingCompatible(tile, cmp)) {
                             uint tilebit = Tile.getTileBitwise(tile);
                             uint cmpbit = Tile.getTileBitwise(cmp);
 
@@ -146,10 +146,10 @@ public class Level : MonoBehaviour, Loadable {
                             tiles[x + 1, y] = cmp;
                         }
                     }
-                    if (y + 1 < width) {
+                    if (y + 1 < height) {
                         uint cmp = tiles[x, y + 1];
 
-                        if (Tile.getIsWall(cmp)) {
+                        if (isTilingCompatible(tile, cmp)) {
                             uint tilebit = Tile.getTileBitwise(tile);
                             uint cmpbit = Tile.getTileBitwise(cmp);
 
@@ -166,6 +166,157 @@ public class Level : MonoBehaviour, Loadable {
                 }
             }
         }
+    }
+
+    public void updateTilingForTile(int x, int y) {
+        if (isValidTilePosition(x, y)) {
+            uint tile = tiles[x, y];
+
+            tile = Tile.setTileBitwise(tile, 0);
+
+            if (Tile.getIsTileable(tile)) {
+                if (y + 1 < height) {
+                    uint cmp = tiles[x, y + 1];
+
+                    if (isTilingCompatible(tile, cmp)) {
+                        uint tilebit = Tile.getTileBitwise(tile);
+
+                        tilebit = tilebit | 1;
+
+                        tile = Tile.setTileBitwise(tile, tilebit);
+
+                        tiles[x, y] = tile;
+                    }
+                }
+                if (y - 1 >= 0) {
+                    uint cmp = tiles[x, y - 1];
+
+                    if (isTilingCompatible(tile, cmp)) {
+                        uint tilebit = Tile.getTileBitwise(tile);
+
+                        tilebit = tilebit | 4;
+
+                        tile = Tile.setTileBitwise(tile, tilebit);
+
+                        tiles[x, y] = tile;
+                    }
+                }
+                if (x - 1 >= 0) {
+                    uint cmp = tiles[x - 1, y];
+
+                    if (isTilingCompatible(tile, cmp)) {
+                        uint tilebit = Tile.getTileBitwise(tile);
+
+                        tilebit = tilebit | 2;
+
+                        tile = Tile.setTileBitwise(tile, tilebit);
+
+                        tiles[x, y] = tile;
+                    }
+                }
+                if (x + 1 < width) {
+                    uint cmp = tiles[x + 1, y];
+
+                    if (isTilingCompatible(tile, cmp)) {
+                        uint tilebit = Tile.getTileBitwise(tile);
+
+                        tilebit = tilebit | 8;
+
+                        tile = Tile.setTileBitwise(tile, tilebit);
+
+                        tiles[x, y] = tile;
+                    }
+                }
+            }
+        }
+    }
+
+    //A cluster is the tile located at x,y as well as the neighbor tiles up, down, left, and right of that tile
+    public void updateTilingForTileClusterAtPosition(int x, int y) {
+        updateTilingForTile(x, y);
+        updateTilingForTile(x, y + 1);
+        updateTilingForTile(x, y - 1);
+        updateTilingForTile(x + 1, y);
+        updateTilingForTile(x - 1, y);
+    }
+
+    private bool isTilingCompatible(uint tileA, uint tileB) {
+        if (Tile.getIsWall(tileA) && Tile.getIsWall(tileB)) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public void createFloorTileAtPosition(int x, int y, string floortype) {
+        if (isValidTilePosition(x, y)) {
+            uint tile = 0;
+            uint tileid = Tile.nameToTileID(floortype);
+
+            TileData data = Tile.getTileDataForTileID(tileid);
+
+            tile = Tile.setTileId(tile, tileid);
+            tile = Tile.setIsTileable(tile, data.isTileable);
+            tile = Tile.setIsWall(tile, false);
+
+            tiles[x, y] = tile;
+
+            updateTilingForTileClusterAtPosition(x, y);
+
+            updateRenderTilesForTileClusterAtPosition(x, y);            
+        }
+    }
+
+    public void createWallTileAtPosition(int x, int y, string walltype) {
+        if (isValidTilePosition(x, y)) {
+            uint tile = 0;
+            uint tileid = Tile.nameToTileID(walltype);
+
+            TileData data = Tile.getTileDataForTileID(tileid);
+
+            tile = Tile.setTileId(tile, tileid);
+            tile = Tile.setIsTileable(tile, data.isTileable);
+            tile = Tile.setIsWall(tile, true);
+
+            tiles[x, y] = tile;
+
+            updateTilingForTileClusterAtPosition(x, y);
+
+            updateRenderTilesForTileClusterAtPosition(x, y);
+        }
+    }
+
+    public void updateRenderTileAtPosition(int x, int y) {
+        if (isValidTilePosition(x, y)) {
+            GameObject renderTile = renderTiles[x, y];
+            SpriteRenderer rend = renderTile.GetComponent<SpriteRenderer>();
+
+            uint tile = tiles[x, y];
+
+            uint tileid = Tile.getTileId(tile);
+            uint bitwise = Tile.getTileBitwise(tile);
+
+            TileData data = Tile.getTileDataForTileID(tileid);
+
+            if (data.isTileable) {
+                rend.sprite = data.sprites[bitwise];
+            }
+            else {
+                rend.sprite = data.sprite;
+            }
+
+            rend.sharedMaterial = data.material;
+        }
+    }
+
+    //A cluster is the tile located at x,y as well as the neighbor tiles up, down, left, and right of that tile
+    public void updateRenderTilesForTileClusterAtPosition(int x, int y) {
+        updateRenderTileAtPosition(x, y);
+        updateRenderTileAtPosition(x, y + 1);
+        updateRenderTileAtPosition(x, y - 1);
+        updateRenderTileAtPosition(x + 1, y);
+        updateRenderTileAtPosition(x - 1, y);
     }
 
     /*
@@ -206,6 +357,8 @@ public class Level : MonoBehaviour, Loadable {
                 renderTile.transform.parent = renderTilesContainer.transform;
 
                 renderTile.transform.localPosition = new Vector3(x, y, 0f);
+
+                renderTiles[x, y] = renderTile;
             }
         }
     }
