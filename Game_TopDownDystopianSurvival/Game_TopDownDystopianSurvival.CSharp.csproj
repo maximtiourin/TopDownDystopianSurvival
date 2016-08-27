@@ -75,6 +75,7 @@
     <Compile Include="Assets\Scripts\GUI\AnimatedButton.cs" />
     <Compile Include="Assets\Scripts\GUI\Button\Script_Button_Click_Debug.cs" />
     <Compile Include="Assets\Scripts\GUI\ButtonScript.cs" />
+    <Compile Include="Assets\Scripts\GUI\Toggle\Script_Toggle_Click_DrawDebug.cs" />
     <Compile Include="Assets\Scripts\GUI\Window\Script_Window_Debug.cs" />
     <Compile Include="Assets\Scripts\Lib\clipper\clipper.cs" />
     <Compile Include="Assets\Scripts\Lib\fizzik\PointScaling.cs" />
@@ -115,9 +116,6 @@
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Point2D.cs" />
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Point2DList.cs" />
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Rect2D.cs" />
-    <Compile Include="Assets\Scripts\Objects\Weapons\RangedWeapon.cs" />
-    <Compile Include="Assets\Scripts\Objects\Weapons\TestPistol.cs" />
-    <Compile Include="Assets\Scripts\Objects\Weapons\Weapon.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Camera\Script_Camera_LevelView_Constrictor.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Camera\Script_Camera_TopDown_Zoom.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Combat\Script_Combat_PlayerGunController.cs" />
@@ -126,11 +124,15 @@
     <Compile Include="Assets\Scripts\PlayerControl\Rotation\Script_Rotation_LookAtMouse.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Rotation\Script_Rotation_PlayerArmControl.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\World\Script_World_Mouse_LevelInteraction.cs" />
+    <Compile Include="Assets\Scripts\UnitTest\Objects\Weapons\RangedWeapon.cs" />
+    <Compile Include="Assets\Scripts\UnitTest\Objects\Weapons\TestPistol.cs" />
+    <Compile Include="Assets\Scripts\UnitTest\Objects\Weapons\Weapon.cs" />
     <Compile Include="Assets\Scripts\UnitTest\UnitTestWorld.cs" />
     <Compile Include="Assets\Scripts\Utility\Collection.cs" />
     <Compile Include="Assets\Scripts\Utility\Script_SpriteRenderer_GenerateMaterial.cs" />
     <Compile Include="Assets\Scripts\World\Chunk.cs" />
     <Compile Include="Assets\Scripts\World\Component_TileDataGenerator.cs" />
+    <Compile Include="Assets\Scripts\World\Debug\DebugLevelOverlay.cs" />
     <Compile Include="Assets\Scripts\World\Level.cs" />
     <Compile Include="Assets\Scripts\World\Loadable.cs" />
     <Compile Include="Assets\Scripts\World\Loader.cs" />

@@ -28,6 +28,8 @@ public class Script_Window_Debug : MonoBehaviour {
 
             string str = "";
 
+            str += "Tick: " + level.getTick() + n;
+
             str += "Mouse Tile X: " + tx + n;
             str += "Mouse Tile Y: " + ty + n;
             str += "Mouse X: " + mx + n;

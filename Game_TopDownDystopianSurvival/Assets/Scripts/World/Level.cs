@@ -6,6 +6,8 @@ public class Level : MonoBehaviour, Loadable {
     private int width = 256;
     private int height = 256;
 
+    public static readonly int pixelsPerUnit = 64;
+
     public static readonly int regionWidth = 16;
     public static readonly int regionHeight = 16;
 
@@ -18,6 +20,8 @@ public class Level : MonoBehaviour, Loadable {
 
     private GameObject renderTilesContainer;
     private GameObject[,] renderTiles;
+
+    private ulong tick;
 
     private bool loaded;
 
@@ -34,6 +38,8 @@ public class Level : MonoBehaviour, Loadable {
         renderTilesContainer = null;
         renderTiles = new GameObject[width, height];
 
+        tick = 0;
+
         loaded = false;
     }
 	
@@ -41,13 +47,13 @@ public class Level : MonoBehaviour, Loadable {
 	// Update is called once per frame
 	void Update () {
         if (isLoaded()) {
-            //Do frame dependent logic
+
+            tick++;
         }
 	}
 
     void FixedUpdate() {
         if (isLoaded()) {
-            //Do timestep dependent logic
         }
     }
 
@@ -358,6 +364,8 @@ public class Level : MonoBehaviour, Loadable {
                 GameObject renderTile = new GameObject();
                 SpriteRenderer rend = renderTile.AddComponent<SpriteRenderer>();
 
+                rend.sortingLayerName = "RenderTile";
+
                 renderTile.name = "RenderTile_" + x + "_" + y;
 
                 renderTile.transform.parent = renderTilesContainer.transform;
@@ -401,5 +409,9 @@ public class Level : MonoBehaviour, Loadable {
 
     public int getHeight() {
         return height;
+    }
+
+    public ulong getTick() {
+        return tick;
     }
 }
