@@ -116,6 +116,9 @@
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Point2D.cs" />
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Point2DList.cs" />
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Rect2D.cs" />
+    <Compile Include="Assets\Scripts\Objects\Weapons\RangedWeapon.cs" />
+    <Compile Include="Assets\Scripts\Objects\Weapons\TestPistol.cs" />
+    <Compile Include="Assets\Scripts\Objects\Weapons\Weapon.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Camera\Script_Camera_LevelView_Constrictor.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Camera\Script_Camera_TopDown_Zoom.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Combat\Script_Combat_PlayerGunController.cs" />
@@ -124,9 +127,6 @@
     <Compile Include="Assets\Scripts\PlayerControl\Rotation\Script_Rotation_LookAtMouse.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Rotation\Script_Rotation_PlayerArmControl.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\World\Script_World_Mouse_LevelInteraction.cs" />
-    <Compile Include="Assets\Scripts\UnitTest\Objects\Weapons\RangedWeapon.cs" />
-    <Compile Include="Assets\Scripts\UnitTest\Objects\Weapons\TestPistol.cs" />
-    <Compile Include="Assets\Scripts\UnitTest\Objects\Weapons\Weapon.cs" />
     <Compile Include="Assets\Scripts\UnitTest\UnitTestWorld.cs" />
     <Compile Include="Assets\Scripts\Utility\Collection.cs" />
     <Compile Include="Assets\Scripts\Utility\Script_SpriteRenderer_GenerateMaterial.cs" />
