@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class Chunk {
     private List<Node> nodes;
     private Dictionary<int, Node> nodeMap;
+    private List<uint> connectionHashes;
 
     public int fillID;
 
@@ -25,5 +26,9 @@ public class Chunk {
 
     public bool containsNode(int key) {
         return nodeMap.ContainsKey(key);
+    }
+
+    public List<uint> getConnectionHashes() {
+        return connectionHashes;
     }
 }

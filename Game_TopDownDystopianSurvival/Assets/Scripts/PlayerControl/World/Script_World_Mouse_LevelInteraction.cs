@@ -49,6 +49,9 @@ public class Script_World_Mouse_LevelInteraction : MonoBehaviour {
                 else if (Input.GetMouseButtonUp(1)) {
                     level.createWallTileAtPosition(x, y, "test02");
                 }
+                else if (Input.GetMouseButtonUp(2)) {
+                    level.createTestDoorAtPosition(x, y);
+                }
             }
         }
         else {

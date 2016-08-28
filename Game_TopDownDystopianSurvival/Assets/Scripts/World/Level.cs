@@ -16,6 +16,8 @@ public class Level : MonoBehaviour, Loadable {
 
     private uint[,] tiles;
 
+    private ChunkConnectivity chunkConnections;
+
     private GameObject renderTilesContainer;
     private GameObject[,] renderTiles;
 
@@ -33,6 +35,8 @@ public class Level : MonoBehaviour, Loadable {
         initRegions();
 
         tiles = new uint[width, height];
+
+        chunkConnections = new ChunkConnectivity();
 
         renderTilesContainer = null;
         renderTiles = new GameObject[width, height];
@@ -58,14 +62,22 @@ public class Level : MonoBehaviour, Loadable {
         }
     }
 
-    //TODO
+    //TODO for now only consider tile walls as obstacles
     public bool isObstacleAtGridPosition(int x, int y) {
-        //TODO for now only consider tile walls as obstacles
         return Tile.getIsWall(tiles[x, y]);
     }
 
     public bool isObstacleAtRegionPosition(Region region, int x, int y) {
         return isObstacleAtGridPosition((region.getWidth() * region.getColumn()) + x, (region.getHeight() * region.getRow()) + y);
+    }
+
+    //TODO for now consider a door just a tile with the testdoor tileset applied
+    public bool isDoorAtGridPosition(int x, int y) {
+        return Tile.getTileId(tiles[x, y]) == Tile.nameToTileID("testdoor");
+    }
+
+    public bool isDoorAtRegionPosition(Region region, int x, int y) {
+        return isDoorAtGridPosition((region.getWidth() * region.getColumn()) + x, (region.getHeight() * region.getRow()) + y);
     }
 
     public bool isValidTilePosition(int x, int y) {
@@ -380,6 +392,28 @@ public class Level : MonoBehaviour, Loadable {
         createWallTileAtPosition(x, y, Tile.nameToTileID(walltype));
     }
 
+    //TODO TESTING PURPOSES ONLY
+    public void createTestDoorAtPosition(int x, int y) {
+        if (isValidTilePosition(x, y)) {
+            uint tile = 0;
+            uint tileid = Tile.nameToTileID("testdoor");
+
+            TileData data = Tile.getTileDataForTileID(tileid);
+
+            tile = Tile.setTileId(tile, tileid);
+            tile = Tile.setIsTileable(tile, data.isTileable);
+            tile = Tile.setIsWall(tile, false);
+
+            tiles[x, y] = tile;
+
+            recalculateRegionsAroundPosition(x, y);
+
+            updateTilingForTileClusterAtPosition(x, y);
+
+            updateRenderTilesForTileClusterAtPosition(x, y);
+        }
+    }
+
     public void updateRenderTileAtPosition(int x, int y) {
         if (isValidTilePosition(x, y)) {
             GameObject renderTile = renderTiles[x, y];
@@ -485,6 +519,10 @@ public class Level : MonoBehaviour, Loadable {
         generateLevel();
 
         loaded = true;
+    }
+
+    public ChunkConnectivity getChunkConnections() {
+        return chunkConnections;
     }
 
     public bool isLoaded() {

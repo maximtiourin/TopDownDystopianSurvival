@@ -129,6 +129,7 @@
     <Compile Include="Assets\Scripts\Utility\Collection.cs" />
     <Compile Include="Assets\Scripts\Utility\Script_SpriteRenderer_GenerateMaterial.cs" />
     <Compile Include="Assets\Scripts\World\Chunk.cs" />
+    <Compile Include="Assets\Scripts\World\ChunkConnectivity.cs" />
     <Compile Include="Assets\Scripts\World\Component_TileDataGenerator.cs" />
     <Compile Include="Assets\Scripts\World\Debug\DebugLevelOverlay.cs" />
     <Compile Include="Assets\Scripts\World\Level.cs" />

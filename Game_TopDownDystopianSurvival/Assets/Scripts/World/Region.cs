@@ -15,6 +15,7 @@ public class Region {
     private Node[,] nodes;
 
     private List<Chunk> chunks; //List of all chunks within the region
+    private List<Chunk> doors; // List of all "door" chunks within the region
     private Dictionary<int, Chunk> fillChunkMap; //Hashmap mapping fillIds to Chunks within the region
     private int fillID; //A unique identifier denoting a subset of connected nodes within the region (which get represented by a chunk)
 
@@ -30,8 +31,7 @@ public class Region {
         nodes = new Node[this.width, this.height];
         initNodes();
 
-        chunks = new List<Chunk>();
-        fillChunkMap = new Dictionary<int, Chunk>();
+        initChunks();
         resetFillID();
     }
 
@@ -45,12 +45,23 @@ public class Region {
 
     private void initChunks() {
         chunks = new List<Chunk>();
+        doors = new List<Chunk>();
+        fillChunkMap = new Dictionary<int, Chunk>();
     }
 
     public void calculateRegion() {
-        //First clean up all region data in preparation for new calculations
+        //Remove this region's chunks from the connectivity map
+        foreach (Chunk chunk in chunks) {
+            List<uint> connections = chunk.getConnectionHashes();
+            foreach (uint hash in connections) {
+                level.getChunkConnections().disconnectChunk(hash, chunk);
+            }
+        }
+
+        //Clean up all region data in preparation for new calculations
         initNodes();
         chunks.Clear();
+        doors.Clear();
         fillChunkMap.Clear();
         resetFillID();
 
@@ -60,6 +71,19 @@ public class Region {
                 BFSNodes(x, y);
             }
         }
+
+        //Add this region's chunks to the connectivity map
+    }
+
+    //Goes through all outer border chunks and calculates their connectivity
+    public void calculateChunkConnectivityOuter() {
+        
+    }
+
+    //Goes through all inner "door" chunks and calculates their connectivity, while mirroring connectivity for their connecting neighbor chunks
+    //This will allow calculating connectivity for doors without having to make a more advanced general algorithm for calculating chunk connectivity
+    public void calculateChunkConnectivityInner() {
+
     }
 
     public Node getNodeAtNodePosition(int x, int y) {
@@ -143,11 +167,31 @@ public class Region {
                 chunks.Add(chunk);
                 fillChunkMap[fill] = chunk;
             }
+            else if (isValidDoorNode(root)) {
+                Node node = root;
+
+                int fill = generateFillID();
+
+                Chunk chunk = new Chunk(fill);
+
+                node.fillID = fill;
+
+                chunk.addNode(getMappedNodePositionToIndex(node), node);
+
+                //Add chunk to region
+                chunks.Add(chunk);
+                doors.Add(chunk);
+                fillChunkMap[fill] = chunk;
+            }
         }
     }
 
     private bool isValidNode(Node node) {
         return isNodeUnvisited(node) && !isNodeObstacle(node);
+    }
+
+    private bool isValidDoorNode(Node node) {
+        return isNodeUnvisited(node) && isNodeDoor(node);
     }
 
     private bool isNodeUnvisited(Node node) {
@@ -167,6 +211,10 @@ public class Region {
                 return false;
             }
         }
+    }
+
+    private bool isNodeDoor(Node node) {
+        return level.isDoorAtRegionPosition(this, node.x, node.y);
     }
 
     public bool isValidNodeIndex(int x, int y) {
