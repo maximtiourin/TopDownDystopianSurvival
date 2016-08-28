@@ -73,6 +73,8 @@ public class Region {
         }
 
         //Add this region's chunks to the connectivity map
+
+        //TODO BIG TODO BIG TODO
     }
 
     //Goes through all outer border chunks and calculates their connectivity
@@ -222,7 +224,7 @@ public class Region {
     }
 
     public bool isValidRegionToLevelIndex(int x, int y) {
-        return level.isValidRegionInnerPosition(x, y);
+        return level.isValidRegionInnerPosition(this, x, y);
     }
 
     public int generateFillID() {
