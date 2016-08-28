@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class Region {
     private Level level;
@@ -26,48 +28,11 @@ public class Region {
         this.row = row;
 
         nodes = new Node[this.width, this.height];
+        initNodes();
 
         chunks = new List<Chunk>();
         fillChunkMap = new Dictionary<int, Chunk>();
         resetFillID();
-    }
-
-    public int generateFillID() {
-        return fillID++;
-    }
-
-    /*
-     * Maps the x and y position of a node to a single integer for use as a unique key
-     */
-    public int getMappedNodePositionToIndex(int x, int y) {
-        return x * height + y;
-    }
-
-    /*
-     * Maps the x and y position of a node to a single integer for use as a unique key
-     */
-    public int getMappedNodePositionToIndex(Node node) {
-        return getMappedNodePositionToIndex(node.x, node.y);
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public int getColumn() {
-        return column;
-    }
-
-    public int getRow() {
-        return row;
-    }
-
-    private void resetFillID() {
-        fillID = 0;
     }
 
     private void initNodes() {
@@ -82,12 +47,48 @@ public class Region {
         chunks = new List<Chunk>();
     }
 
-    private void calculateRegion() {
+    public void calculateRegion() {
         //First clean up all region data in preparation for new calculations
         initNodes();
         chunks.Clear();
         fillChunkMap.Clear();
         resetFillID();
+
+        //Calculate Chunks
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                BFSNodes(x, y);
+            }
+        }
+    }
+
+    public Node getNodeAtNodePosition(int x, int y) {
+        if (isValidNodeIndex(x, y)) {
+            return nodes[x, y];
+        }
+        else {
+            return null;
+        }
+    }
+
+    public bool isChunkAtNodePosition(int x, int y) {
+        if (isValidNodeIndex(x, y)) {
+            Node node = nodes[x, y];
+
+            return fillChunkMap.ContainsKey(node.fillID);
+        }
+        else {
+            return false;
+        }
+    }
+
+    public Chunk getChunkAtNodePosition(int x, int y) {
+        if (isChunkAtNodePosition(x, y)) {
+            return fillChunkMap[nodes[x, y].fillID];
+        }
+        else {
+            return null;
+        }
     }
 
     //Breadth first search nodes for pathability and assign unique fillid, also assign nodes to a chunk
@@ -95,7 +96,7 @@ public class Region {
         if (isValidNodeIndex(x, y)) {
             Node root = nodes[x, y];
 
-            if (isNodeUnvisited(root) && !isNodeObstacle(root)) {
+            if (isValidNode(root)) {
                 Queue<Node> queue = new Queue<Node>();
 
                 int fill = generateFillID();
@@ -104,7 +105,9 @@ public class Region {
 
                 queue.Enqueue(root);
 
-                while (queue.Count > 0) {
+                int bugBreak = width * height; //DEBUG
+                int loopCount = 0; //DEBUG
+                while (queue.Count > 0 && loopCount < bugBreak) { //DEBUG
                     Node node = queue.Dequeue();
 
                     node.fillID = fill;
@@ -114,27 +117,37 @@ public class Region {
                     //Get valid neighboring nodes
                     for (int dx = -1; dx <= 1; dx++) {
                         for (int dy = -1; dy <= 1; dy++) {
-                            if (!((dx == 0) && (dy == 0))) {
-                                int nx = x + dx;
-                                int ny = y + dy;
+                            if (!((dx == 0) && (dy == 0)) && (Math.Abs(dx) != Math.Abs(dy))) {
+                                int nx = node.x + dx;
+                                int ny = node.y + dy;
 
                                 if (isValidNodeIndex(nx, ny)) {
                                     Node neighbor = nodes[nx, ny];
 
-                                    if (isNodeUnvisited(neighbor) && !isNodeObstacle(neighbor)) {
-                                        queue.Enqueue(neighbor);
+                                    if (isValidNode(neighbor)) {
+                                        if (!queue.Contains(neighbor)) {
+                                            queue.Enqueue(neighbor);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+
+                    loopCount++; //DEBUG
                 }
+
+                if (loopCount == bugBreak) Debug.Log("Infinite Loop Stopped Region[" + column + ", " + row + "] BFSNodes(" + x + ", " + y + ")"); //DEBUG
 
                 //Add chunk to region
                 chunks.Add(chunk);
-                fillChunkMap.Add(fill, chunk);
+                fillChunkMap[fill] = chunk;
             }
         }
+    }
+
+    private bool isValidNode(Node node) {
+        return isNodeUnvisited(node) && !isNodeObstacle(node);
     }
 
     private bool isNodeUnvisited(Node node) {
@@ -156,7 +169,49 @@ public class Region {
         }
     }
 
-    private bool isValidNodeIndex(int x, int y) {
+    public bool isValidNodeIndex(int x, int y) {
         return (x >= 0 && x < width) && (y >= 0 && y < height);
+    }
+
+    public int generateFillID() {
+        return fillID++;
+    }
+
+    /*
+     * Maps the x and y position of a node to a single integer for use as a unique key
+     */
+    public int getMappedNodePositionToIndex(int x, int y) {
+        return x * height + y;
+    }
+
+    /*
+     * Maps the x and y position of a node to a single integer for use as a unique key
+     */
+    public int getMappedNodePositionToIndex(Node node) {
+        return getMappedNodePositionToIndex(node.x, node.y);
+    }
+
+    public int getRegionHashCode() {
+        return column * level.getRegionRowCount() + row;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public int getColumn() {
+        return column;
+    }
+
+    public int getRow() {
+        return row;
+    }
+
+    private void resetFillID() {
+        fillID = 0;
     }
 }

@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using System.Collections;
 using UnityEditor;
+using UnityEngine.Events;
 
 [CustomEditor(typeof(AnimatedButton))]
 public class EditorScript_AnimatedButton : Editor {
@@ -70,5 +71,15 @@ public class EditorScript_AnimatedButton : Editor {
         Navigation nav = new Navigation();
         nav.mode = mode;
         btn.navigation = nav;
+
+
+        //UnityEvent 
+        serializedObject.Update();
+        SerializedProperty onClick = serializedObject.FindProperty("clickEvent");
+        EditorGUILayout.PropertyField(onClick);
+
+        if (GUI.changed) {
+            serializedObject.ApplyModifiedProperties();
+        }
     }
 }

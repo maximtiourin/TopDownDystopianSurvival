@@ -6,8 +6,6 @@ public class Level : MonoBehaviour, Loadable {
     private int width = 256;
     private int height = 256;
 
-    public static readonly int pixelsPerUnit = 64;
-
     public static readonly int regionWidth = 16;
     public static readonly int regionHeight = 16;
 
@@ -22,6 +20,7 @@ public class Level : MonoBehaviour, Loadable {
     private GameObject[,] renderTiles;
 
     private ulong tick;
+    private float timeElapsed;
 
     private bool loaded;
 
@@ -48,12 +47,14 @@ public class Level : MonoBehaviour, Loadable {
 	void Update () {
         if (isLoaded()) {
 
-            tick++;
+            timeElapsed += Time.deltaTime;
         }
 	}
 
     void FixedUpdate() {
         if (isLoaded()) {
+
+            tick++;
         }
     }
 
@@ -71,15 +72,20 @@ public class Level : MonoBehaviour, Loadable {
         return ((x >= 0 && x < width) && (y >= 0 && y < height));
     }
 
-    //TODO
+    public bool isValidRegionPosition(int c, int r) {
+        return ((c >= 0 && c < regionColumns) && (r >= 0 && r < regionRows));
+    }
+
     private void generateLevel() {
-        //TODO Generate Tiles --Temporary gen        
+        //Generate Tiles and first pass calculate their tiling  
         generateTiles();
+        calculateTiling();
 
-        //TODO Generate all Entities
+        //Create RenderTile objects
+        generateRenderTiles();
 
-        //Generate Regions
-
+        //First pass Calculate Regions
+        calculateRegions();
     }
 
     //TODO testing generation currently
@@ -125,6 +131,69 @@ public class Level : MonoBehaviour, Loadable {
         tile = Tile.setTileId(tile, test02.tileid);
         tile = Tile.setIsTileable(tile, test02.isTileable);
         tiles[1, 0] = tile;
+    }
+
+    //Calculates all regions, very expensive call, instead update individual regions when possible
+    private void calculateRegions() {
+        //TODO DEBUGGING
+        //calculateRegion(0, 0);
+
+        for (int c = 0; c < regionColumns; c++) {
+            for (int r = 0; r < regionRows; r++) {
+                calculateRegion(c, r);
+            }
+        }
+    }
+
+    private void calculateRegion(int column, int row) {
+        regions[column, row].calculateRegion();
+    }
+
+    //Recalculates the region the tile is in, as well as any bordering regions if they might be affected
+    private void recalculateRegionsAroundPosition(int x, int y) {
+        int rtx = getInnerRegionXAtPositionX(x);
+        int rty = getInnerRegionYAtPositionY(y);
+
+        bool left = rtx == 0;
+        bool right = rtx == regionWidth - 1;
+        bool up = rty == regionHeight - 1;
+        bool down = rty == 0;
+
+        int c = getRegionXAtPositionX(x);
+        int r = getRegionYAtPositionY(y);
+
+        recalculateRegion(c, r);
+
+        if (left) {
+            recalculateRegion(c - 1, r);
+        }
+        if (right) {
+            recalculateRegion(c + 1, r);
+        }
+        if (up) {
+            recalculateRegion(c, r + 1);
+        }
+        if (down) {
+            recalculateRegion(c, r - 1);
+        }
+        if (left && up) {
+            recalculateRegion(c - 1, r + 1);
+        }
+        if (right && up) {
+            recalculateRegion(c + 1, r + 1);
+        }
+        if (left && down) {
+            recalculateRegion(c - 1, r - 1);
+        }
+        if (right && down) {
+            recalculateRegion(c + 1, r - 1);
+        }
+    }
+
+    private void recalculateRegion(int c, int r) {
+        if (isValidRegionPosition(c, r)) {
+            calculateRegion(c, r);
+        }
     }
 
     //Updates tiling for all tiles, very expensive call, instead update tiling for individual tiles or clusters when possible
@@ -256,7 +325,7 @@ public class Level : MonoBehaviour, Loadable {
         updateTilingForTile(x, y);
     }
 
-    //TODO handles all tileables cases to make sure that two tileable tiles actually want to tile with each other
+    //TODO handles all tileables cases to make sure that two tileable tiles actually want to tile with each other (must add floor tileability functionality)
     private bool isTilingCompatible(uint tileA, uint tileB) {
         if (Tile.getIsWall(tileA) && Tile.getIsWall(tileB)) {
             return true;
@@ -277,6 +346,8 @@ public class Level : MonoBehaviour, Loadable {
             tile = Tile.setIsWall(tile, false);
 
             tiles[x, y] = tile;
+
+            recalculateRegionsAroundPosition(x, y);
 
             updateTilingForTileClusterAtPosition(x, y);
 
@@ -299,6 +370,8 @@ public class Level : MonoBehaviour, Loadable {
             tile = Tile.setIsWall(tile, true);
 
             tiles[x, y] = tile;
+
+            recalculateRegionsAroundPosition(x, y);
 
             updateTilingForTileClusterAtPosition(x, y);
 
@@ -383,6 +456,26 @@ public class Level : MonoBehaviour, Loadable {
         return tiles[x, y];
     }
 
+    private int getRegionXAtPositionX(int x) {
+        return (int) Mathf.Floor(x / regionWidth);
+    }
+
+    private int getRegionYAtPositionY(int y) {
+        return (int) Mathf.Floor(y / regionHeight);
+    }
+
+    public Region getRegionAtPosition(int x, int y) {
+        return regions[getRegionXAtPositionX(x), getRegionYAtPositionY(y)];
+    }
+
+    public int getInnerRegionXAtPositionX(int x) {
+        return x % regionWidth;
+    }
+
+    public int getInnerRegionYAtPositionY(int y) {
+        return y % regionHeight;
+    }
+
     private void initRegions() {
         for (int c = 0; c < regionColumns; c++) {
             for (int r = 0; r < regionRows; r++) {
@@ -393,8 +486,6 @@ public class Level : MonoBehaviour, Loadable {
 
     public void load() {
         generateLevel();
-        calculateTiling();
-        generateRenderTiles();
 
         loaded = true;
     }
@@ -411,7 +502,19 @@ public class Level : MonoBehaviour, Loadable {
         return height;
     }
 
+    public int getRegionColumnCount() {
+        return regionColumns;
+    }
+
+    public int getRegionRowCount() {
+        return regionRows;
+    }
+
     public ulong getTick() {
         return tick;
+    }
+
+    public float getElapsedTime() {
+        return timeElapsed;
     }
 }

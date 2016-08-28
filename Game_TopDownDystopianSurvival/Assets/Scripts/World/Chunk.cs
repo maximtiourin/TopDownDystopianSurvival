@@ -5,7 +5,7 @@ public class Chunk {
     private List<Node> nodes;
     private Dictionary<int, Node> nodeMap;
 
-    private int fillID;
+    public int fillID;
 
     public Chunk(int fillID) {
         nodes = new List<Node>();
@@ -16,6 +16,14 @@ public class Chunk {
 
     public void addNode(int key, Node value) {
         nodes.Add(value);
-        nodeMap.Add(key, value);
+        nodeMap[key] = value;
+    }
+
+    public List<Node> getNodes() {
+        return nodes;
+    }
+
+    public bool containsNode(int key) {
+        return nodeMap.ContainsKey(key);
     }
 }

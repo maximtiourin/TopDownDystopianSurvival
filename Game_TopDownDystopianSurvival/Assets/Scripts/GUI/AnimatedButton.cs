@@ -1,12 +1,20 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System;
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
 
 public class AnimatedButton : Button {
+    [Serializable]
+    public class AnimatedButtonEvent : UnityEvent { }
+
     private Image img;
     private ButtonScript script;
 
     public bool shouldColorTintForAnimation = true;
+    
+    public AnimatedButtonEvent clickEvent = new AnimatedButtonEvent();
 
     protected override void Start() {
         base.Start();
@@ -15,6 +23,25 @@ public class AnimatedButton : Button {
         if (script != null) {
             onClick.AddListener(script.onClick);
         }
+    }
+    
+    private void press() {
+        clickEvent.Invoke();
+    }
+
+    public override void OnPointerClick(PointerEventData eventData) {
+        if (eventData.button != PointerEventData.InputButton.Left)
+            return;
+
+        press();
+
+        base.OnPointerClick(eventData);
+    }
+
+    public override void OnSubmit(BaseEventData eventData) {
+        press();
+
+        base.OnSubmit(eventData);
     }
 
     protected override void OnValidate() {

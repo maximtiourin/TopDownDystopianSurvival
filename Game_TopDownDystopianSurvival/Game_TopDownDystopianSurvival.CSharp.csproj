@@ -73,9 +73,7 @@
     <Compile Include="Assets\Scripts\Effects\CasingEjection.cs" />
     <Compile Include="Assets\Scripts\Effects\MuzzleFlash.cs" />
     <Compile Include="Assets\Scripts\GUI\AnimatedButton.cs" />
-    <Compile Include="Assets\Scripts\GUI\Button\Script_Button_Click_Debug.cs" />
     <Compile Include="Assets\Scripts\GUI\ButtonScript.cs" />
-    <Compile Include="Assets\Scripts\GUI\Toggle\Script_Toggle_Click_DrawDebug.cs" />
     <Compile Include="Assets\Scripts\GUI\Window\Script_Window_Debug.cs" />
     <Compile Include="Assets\Scripts\Lib\clipper\clipper.cs" />
     <Compile Include="Assets\Scripts\Lib\fizzik\PointScaling.cs" />
