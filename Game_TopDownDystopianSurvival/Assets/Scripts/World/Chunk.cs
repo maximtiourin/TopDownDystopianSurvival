@@ -11,6 +11,7 @@ public class Chunk {
     public Chunk(int fillID) {
         nodes = new List<Node>();
         nodeMap = new Dictionary<int, Node>();
+        connectionHashes = new List<uint>();
 
         this.fillID = fillID;
     }

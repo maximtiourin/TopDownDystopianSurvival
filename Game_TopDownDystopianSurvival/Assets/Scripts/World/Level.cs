@@ -68,7 +68,7 @@ public class Level : MonoBehaviour, Loadable {
     }
 
     public bool isObstacleAtRegionPosition(Region region, int x, int y) {
-        return isObstacleAtGridPosition((region.getWidth() * region.getColumn()) + x, (region.getHeight() * region.getRow()) + y);
+        return isObstacleAtGridPosition(getPositionXAtInnerRegionX(region, x), getPositionYAtInnerRegionY(region, y));
     }
 
     //TODO for now consider a door just a tile with the testdoor tileset applied
@@ -77,15 +77,23 @@ public class Level : MonoBehaviour, Loadable {
     }
 
     public bool isDoorAtRegionPosition(Region region, int x, int y) {
-        return isDoorAtGridPosition((region.getWidth() * region.getColumn()) + x, (region.getHeight() * region.getRow()) + y);
+        return isDoorAtGridPosition(getPositionXAtInnerRegionX(region, x), getPositionYAtInnerRegionY(region, y));
     }
 
     public bool isValidTilePosition(int x, int y) {
         return ((x >= 0 && x < width) && (y >= 0 && y < height));
     }
 
+    //Checks if the region row and column are within bounds
     public bool isValidRegionPosition(int c, int r) {
         return ((c >= 0 && c < regionColumns) && (r >= 0 && r < regionRows));
+    }
+
+    //Checks if the region inner position converted to level position is within the level bounds
+    public bool isValidRegionInnerPosition(Region region, int x, int y) {
+        int rx = getPositionXAtInnerRegionX(region, x);
+        int ry = getPositionYAtInnerRegionY(region, y);
+        return isValidTilePosition(rx, ry);
     }
 
     private void generateLevel() {
@@ -505,6 +513,14 @@ public class Level : MonoBehaviour, Loadable {
 
     public int getInnerRegionYAtPositionY(int y) {
         return y % regionHeight;
+    }
+
+    public int getPositionXAtInnerRegionX(Region region, int x) {
+        return (region.getWidth() * region.getColumn()) + x;
+    }
+
+    public int getPositionYAtInnerRegionY(Region region, int y) {
+        return (region.getHeight() * region.getRow()) + y;
     }
 
     private void initRegions() {

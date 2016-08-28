@@ -120,7 +120,23 @@ public class Region {
         if (isValidNodeIndex(x, y)) {
             Node root = nodes[x, y];
 
-            if (isValidNode(root)) {
+            if (isValidDoorNode(root)) {
+                Node node = root;
+
+                int fill = generateFillID();
+
+                Chunk chunk = new Chunk(fill);
+
+                node.fillID = fill;
+
+                chunk.addNode(getMappedNodePositionToIndex(node), node);
+
+                //Add chunk to region
+                chunks.Add(chunk);
+                doors.Add(chunk);
+                fillChunkMap[fill] = chunk;
+            }
+            else if (isValidNode(root)) {
                 Queue<Node> queue = new Queue<Node>();
 
                 int fill = generateFillID();
@@ -148,7 +164,7 @@ public class Region {
                                 if (isValidNodeIndex(nx, ny)) {
                                     Node neighbor = nodes[nx, ny];
 
-                                    if (isValidNode(neighbor)) {
+                                    if (isValidNode(neighbor) && !isValidDoorNode(neighbor)) {
                                         if (!queue.Contains(neighbor)) {
                                             queue.Enqueue(neighbor);
                                         }
@@ -165,22 +181,6 @@ public class Region {
 
                 //Add chunk to region
                 chunks.Add(chunk);
-                fillChunkMap[fill] = chunk;
-            }
-            else if (isValidDoorNode(root)) {
-                Node node = root;
-
-                int fill = generateFillID();
-
-                Chunk chunk = new Chunk(fill);
-
-                node.fillID = fill;
-
-                chunk.addNode(getMappedNodePositionToIndex(node), node);
-
-                //Add chunk to region
-                chunks.Add(chunk);
-                doors.Add(chunk);
                 fillChunkMap[fill] = chunk;
             }
         }
@@ -219,6 +219,10 @@ public class Region {
 
     public bool isValidNodeIndex(int x, int y) {
         return (x >= 0 && x < width) && (y >= 0 && y < height);
+    }
+
+    public bool isValidRegionToLevelIndex(int x, int y) {
+        return level.isValidRegionInnerPosition(x, y);
     }
 
     public int generateFillID() {
