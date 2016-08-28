@@ -105,7 +105,7 @@ public class Region {
 
                 queue.Enqueue(root);
 
-                int bugBreak = width * height; //DEBUG
+                int bugBreak = width * height + 1; //DEBUG
                 int loopCount = 0; //DEBUG
                 while (queue.Count > 0 && loopCount < bugBreak) { //DEBUG
                     Node node = queue.Dequeue();
