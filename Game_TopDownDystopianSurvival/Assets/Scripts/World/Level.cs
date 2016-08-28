@@ -81,7 +81,7 @@ public class Level : MonoBehaviour, Loadable {
         generateTiles();
         calculateTiling();
 
-        //Create RenderTile objects
+        //Create RenderTile objects and first pass determine their sprite
         generateRenderTiles();
 
         //First pass Calculate Regions
@@ -135,9 +135,6 @@ public class Level : MonoBehaviour, Loadable {
 
     //Calculates all regions, very expensive call, instead update individual regions when possible
     private void calculateRegions() {
-        //TODO DEBUGGING
-        //calculateRegion(0, 0);
-
         for (int c = 0; c < regionColumns; c++) {
             for (int r = 0; r < regionRows; r++) {
                 calculateRegion(c, r);
