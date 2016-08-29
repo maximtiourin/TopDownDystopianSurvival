@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Script_Window_Debug : MonoBehaviour {
     public GameObject levelMouseContainer;
@@ -72,21 +73,41 @@ public class Script_Window_Debug : MonoBehaviour {
                 str += "Region Node FillID: " + node.fillID + n;
             }
 
-            /*DebugLevelOverlay dbo = debugOverlay;
-            if (dbo.region != null) {
-                str += "DebugOverlay Region X: " + dbo.region.getColumn() + n;
-                str += "DebugOverlay Region Y: " + dbo.region.getRow() + n;
-            }
+            DebugLevelOverlay dbo = debugOverlay;
             if (dbo.chunk != null) {
-                str += "DebugOverlay Chunk FillID: " + dbo.chunk.fillID + n;
+                List<uint> connections = dbo.chunk.getConnectionHashes();
+
+                int index = 0;
+                while (connections != null && index < connections.Count) {
+                    uint hash = connections[index];
+                    int hx = ChunkConnectivity.getXPosition(hash);
+                    int hy = ChunkConnectivity.getYPosition(hash);
+                    int hlen = ChunkConnectivity.getLength(hash);
+                    ChunkConnectivity.Configuration hconfig = ChunkConnectivity.getConfig(hash);
+                    str += "OverlayChunkConnect #" + index + " : x = " + hx + ", y = " + hy + ", len = " + hlen + ", config = " + hconfig.ToString() + n;
+                    index++;
+                }
             }
-            if (dbo.cacheRegion != null) {
-                str += "DebugOverlay cacheRegion X: " + dbo.cacheRegion.getColumn() + n;
-                str += "DebugOverlay cacheRegion Y: " + dbo.cacheRegion.getRow() + n;
+
+            str += "-----------------------" + n;
+            Region test = level.getRegionAtMatrixIndex(0, 0);
+            Chunk testc = test.getChunk(0);
+            if (testc != null) {
+                List<uint> connections = testc.getConnectionHashes();
+
+                str += connections.Count + n;
+
+                int index = 0;
+                while (connections != null && index < connections.Count) {
+                    uint hash = connections[index];
+                    int hx = ChunkConnectivity.getXPosition(hash);
+                    int hy = ChunkConnectivity.getYPosition(hash);
+                    int hlen = ChunkConnectivity.getLength(hash);
+                    ChunkConnectivity.Configuration hconfig = ChunkConnectivity.getConfig(hash);
+                    str += "RealChunkConnect #" + index + " : x = " + hx + ", y = " + hy + ", len = " + hlen + ", config = " + hconfig.ToString() + n;
+                    index++;
+                }
             }
-            if (dbo.cacheChunk != null) {
-                str += "DebugOverlay cacheChunk FillID: " + dbo.cacheChunk.fillID + n;
-            }*/
 
             if (levelMouse.isObstructed()) str += "Mouse over GUI" + n;
 

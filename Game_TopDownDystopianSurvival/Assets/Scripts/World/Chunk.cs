@@ -29,6 +29,20 @@ public class Chunk {
         return nodeMap.ContainsKey(key);
     }
 
+    public bool addConnection(uint hash) {
+        if (!connectionHashes.Contains(hash)) {
+            connectionHashes.Add(hash);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public bool removeConnection(uint hash) {
+        return connectionHashes.Remove(hash);
+    }
+
     public List<uint> getConnectionHashes() {
         return connectionHashes;
     }

@@ -53,8 +53,12 @@ public class Region {
         //Remove this region's chunks from the connectivity map
         foreach (Chunk chunk in chunks) {
             List<uint> connections = chunk.getConnectionHashes();
-            foreach (uint hash in connections) {
+
+            int index = 0;
+            while (connections != null && index < connections.Count) {
+                uint hash = connections[index];
                 level.getChunkConnections().disconnectChunk(hash, chunk);
+                index++;
             }
         }
 
@@ -73,19 +77,92 @@ public class Region {
         }
 
         //Add this region's chunks to the connectivity map
-
-        //TODO BIG TODO BIG TODO
+        //calculateChunkConnectivityInner();
+        calculateChunkConnectivityOuter();
     }
 
     //Goes through all outer border chunks and calculates their connectivity
-    public void calculateChunkConnectivityOuter() {
-        
+    private void calculateChunkConnectivityOuter() {
+        //Make sure to remember to account for edge positions that have already been
+        //connect -mirrored by door connectivity, check if a hash exists already for that tile to invalidate it
+
+        //FOUND THE CAUSE OF THE BUG: With mirroring, the chunk purges its mirror connection when regions are being recalculated, undoing the mirror effect!!!!
+
+        //TODO TODO TODO TODO TODO
+        //Try to implement general chunk connectivity algorithm, instead of trying to do a special mirroring case with doors, since each chunk
+        //has a chance to purge its mirrored connections when they are across neighboring regions
     }
 
     //Goes through all inner "door" chunks and calculates their connectivity, while mirroring connectivity for their connecting neighbor chunks
     //This will allow calculating connectivity for doors without having to make a more advanced general algorithm for calculating chunk connectivity
-    public void calculateChunkConnectivityInner() {
+    private void calculateChunkConnectivityInner() {
+        foreach (Chunk doorChunk in doors) {
+            Node door = doorChunk.getNodes()[0];
+            int lx = level.getPositionXAtInnerRegionX(this, door.x);
+            int ly = level.getPositionYAtInnerRegionY(this, door.y);
 
+            List<uint> connections = doorChunk.getConnectionHashes();
+            bool up = !connections.Contains(doorGetQuickTopHash(door)) && isValidDestinationNodeForConnection(lx, ly + 1);
+            bool down = !connections.Contains(doorGetQuickBotHash(door)) && isValidDestinationNodeForConnection(lx, ly - 1);
+            bool left = !connections.Contains(doorGetQuickLeftHash(door)) && isValidDestinationNodeForConnection(lx - 1, ly);
+            bool right = !connections.Contains(doorGetQuickRightHash(door)) && isValidDestinationNodeForConnection(lx + 1, ly);
+
+            //#Note - Since up/down/etc are only valid if the shift position is already valid, we dont need to error check shiftx, shifty
+            if (up) {
+                createDoorChunkConnection(doorChunk, door, lx, ly, 0, 1, false, ChunkConnectivity.Configuration.Horizontal);
+            }
+            if (down) {
+                createDoorChunkConnection(doorChunk, door, lx, ly, 0, -1, true, ChunkConnectivity.Configuration.Horizontal);
+            }
+            if (left) {
+                createDoorChunkConnection(doorChunk, door, lx, ly, -1, 0, true, ChunkConnectivity.Configuration.Vertical);
+            }
+            if (right) {
+                createDoorChunkConnection(doorChunk, door, lx, ly, 1, 0, false, ChunkConnectivity.Configuration.Vertical);
+            }
+        }
+    }
+
+    //inner is true if the hash should be generated on top of the door node, false otherwise. See calculateChunkConnectivityInner for why things like shiftRegion aren't error checked
+    private void createDoorChunkConnection(Chunk doorChunk, Node door, int lx, int ly, int shiftx, int shifty, bool inner, ChunkConnectivity.Configuration config) {
+        Region shiftRegion = level.getRegionAtPosition(lx + shiftx, ly + shifty);
+
+        Node shiftNode;
+        Chunk shiftChunk;
+
+        bool test = false;
+        if (isPositionEqual(shiftRegion)) {
+            //Shift Node is within our current region
+            shiftNode = nodes[door.x + shiftx, door.y + shifty];
+            shiftChunk = fillChunkMap[shiftNode.fillID];
+        }
+        else {
+            test = true;
+
+            //Shift Node is within neighboring region
+            int innerx = level.getInnerRegionXAtPositionX(lx + shiftx);
+            int innery = level.getInnerRegionYAtPositionY(ly + shifty);
+            shiftNode = shiftRegion.getNodeAtNodePosition(innerx, innery);
+            shiftChunk = shiftRegion.getChunkAtNodePosition(innerx, innery);
+        }
+
+        //Generate ChunkConnectivity hash
+        int innershiftx = (inner) ? (0) : (shiftx);
+        int innershifty = (inner) ? (0) : (shifty);
+        uint hash = ChunkConnectivity.generateConnectivityHash(lx + innershiftx, ly + innershifty, 1, config);
+
+        ChunkConnectivity connections = level.getChunkConnections();
+        connections.connectChunk(hash, doorChunk);
+        connections.connectChunk(hash, shiftChunk);
+
+        if (test) {
+            Debug.Log("Region " + shiftRegion.getColumn() + ", " + shiftRegion.getRow() + " : Node " + shiftNode.x + ", " + shiftNode.y);
+            Debug.Log("Chunk " + shiftChunk.fillID + " : Connections Count = " + shiftChunk.getConnectionHashes().Count);
+        }
+    }
+
+    private bool isValidDestinationNodeForConnection(int x, int y) {
+        return level.isValidTilePosition(x, y) && (level.isDoorAtGridPosition(x, y) || !level.isObstacleAtGridPosition(x, y));
     }
 
     public Node getNodeAtNodePosition(int x, int y) {
@@ -133,7 +210,7 @@ public class Region {
 
                 chunk.addNode(getMappedNodePositionToIndex(node), node);
 
-                //Add chunk to region
+                //Add door chunk to region
                 chunks.Add(chunk);
                 doors.Add(chunk);
                 fillChunkMap[fill] = chunk;
@@ -263,6 +340,43 @@ public class Region {
 
     public int getRow() {
         return row;
+    }
+
+    private uint doorGetQuickTopHash(Node door) {
+        int lx = level.getPositionXAtInnerRegionX(this, door.x);
+        int ly = level.getPositionYAtInnerRegionY(this, door.y);
+        return ChunkConnectivity.generateConnectivityHash(lx, ly + 1, 1, ChunkConnectivity.Configuration.Horizontal);
+    }
+
+    private uint doorGetQuickBotHash(Node door) {
+        int lx = level.getPositionXAtInnerRegionX(this, door.x);
+        int ly = level.getPositionYAtInnerRegionY(this, door.y);
+        return ChunkConnectivity.generateConnectivityHash(lx, ly, 1, ChunkConnectivity.Configuration.Horizontal);
+    }
+
+    private uint doorGetQuickLeftHash(Node door) {
+        int lx = level.getPositionXAtInnerRegionX(this, door.x);
+        int ly = level.getPositionYAtInnerRegionY(this, door.y);
+        return ChunkConnectivity.generateConnectivityHash(lx, ly, 1, ChunkConnectivity.Configuration.Vertical);
+    }
+
+    private uint doorGetQuickRightHash(Node door) {
+        int lx = level.getPositionXAtInnerRegionX(this, door.x);
+        int ly = level.getPositionYAtInnerRegionY(this, door.y);
+        return ChunkConnectivity.generateConnectivityHash(lx + 1, ly, 1, ChunkConnectivity.Configuration.Vertical);
+    }
+
+    public Chunk getChunk(int fillID) {
+        if (fillChunkMap.ContainsKey(fillID)) {
+            return fillChunkMap[fillID];
+        }
+        else {
+            return null;
+        }
+    }
+
+    public bool isPositionEqual(Region other) {
+        return (row == other.getRow()) && (column == other.getColumn());
     }
 
     private void resetFillID() {

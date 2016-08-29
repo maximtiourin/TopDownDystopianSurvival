@@ -23,8 +23,8 @@ public class ChunkConnectivity {
     }
 
     //Inserts the chunk into the list mapped to the given key, if the chunk is not already a part of that list.
-    //Creates a new list if the key is unique.
-    public void connectChunk(uint key, Chunk value) {
+    //Creates a new list if the key is unique. Returns true/false based on success of addition
+    public bool connectChunk(uint key, Chunk value) {
         List<Chunk> list;
 
         if (map.ContainsKey(key)) {
@@ -37,16 +37,50 @@ public class ChunkConnectivity {
 
         if (!list.Contains(value)) {
             list.Add(value);
+            value.addConnection(key);
+            return true;
+        }
+        else {
+            return false;
         }
     }
 
-    //Attempts to remove the chunk in the list mapped to the given key, if it exists, and returns true/false based on success of removal
+    //Attempts to remove the chunk in the list mapped to the given key, if it exists, and returns true/false based on success of removal.
     public bool disconnectChunk(uint key, Chunk value) {
-        return map.ContainsKey(key) && map[key].Remove(value);
+        value.removeConnection(key);
+
+        if (map.ContainsKey(key)) {
+            List<Chunk> list = map[key];
+
+            if (list.Contains(value)) {
+                list.Remove(value);
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
     }
 
     public void Clear() {
         map.Clear();
+    }
+
+    public static bool isPositionContainedByConnectivityHash(uint hash, int x, int y) {
+        int cx = getXPosition(hash);
+        int cy = getYPosition(hash);
+        int len = getLength(hash);
+        Configuration config = getConfig(hash);
+
+        if (config == Configuration.Horizontal) {
+            return (y == cy) && (x >= cx && x < cx + len);
+        }
+        else {
+            return (x == cx) && (y >= cy && y < cy + len);
+        }
     }
 
     public static uint generateConnectivityHash(int x, int y, int length, Configuration config) {

@@ -496,15 +496,19 @@ public class Level : MonoBehaviour, Loadable {
     }
 
     private int getRegionXAtPositionX(int x) {
-        return (int) Mathf.Floor(x / regionWidth);
+        return (int) Mathf.Floor(x / (float) regionWidth);
     }
 
     private int getRegionYAtPositionY(int y) {
-        return (int) Mathf.Floor(y / regionHeight);
+        return (int) Mathf.Floor(y / (float) regionHeight);
     }
 
     public Region getRegionAtPosition(int x, int y) {
         return regions[getRegionXAtPositionX(x), getRegionYAtPositionY(y)];
+    }
+
+    public Region getRegionAtMatrixIndex(int column, int row) {
+        return regions[column, row];
     }
 
     public int getInnerRegionXAtPositionX(int x) {
@@ -513,6 +517,14 @@ public class Level : MonoBehaviour, Loadable {
 
     public int getInnerRegionYAtPositionY(int y) {
         return y % regionHeight;
+    }
+
+    public int getPositionX(float x) {
+        return (int) Mathf.Floor(x);
+    }
+
+    public int getPositionY(float y) {
+        return (int) Mathf.Floor(y);
     }
 
     public int getPositionXAtInnerRegionX(Region region, int x) {
