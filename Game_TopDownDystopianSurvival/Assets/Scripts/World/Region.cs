@@ -78,91 +78,136 @@ public class Region {
 
         //Add this region's chunks to the connectivity map
         //calculateChunkConnectivityInner();
-        calculateChunkConnectivityOuter();
+        //calculateChunkConnectivityOuter();
+        calculateChunkConnectivityEdge(0, width - 1, height - 1, height - 1, 0, 1, ChunkConnectivity.Configuration.Horizontal);
     }
 
-    //Goes through all outer border chunks and calculates their connectivity
-    private void calculateChunkConnectivityOuter() {
-        //Make sure to remember to account for edge positions that have already been
-        //connect -mirrored by door connectivity, check if a hash exists already for that tile to invalidate it
+    //Goes through all appropriate nodes and generates chunk connectivity information for the appropriate chunks.
+    //A region is responsible for fully building all correct connectivity information for its own chunks
+    private void calculateChunkConnectivityEdge(int xmin, int xmax, int ymin, int ymax, int destXOff, int destYOff, ChunkConnectivity.Configuration config) {
+        // ***** Loop through edge nodes to build edge connectivity (account for any doors that might connect to edge nodes)
+        bool chain = false;
+        int chainlen = 0;
+        Node chainStartNode = null;
+        Chunk chainStartChunk = null;
+        for (int x = xmin; x <= xmax; x++) {
+            for (int y = ymin; y <= ymax; y++) {
 
-        //FOUND THE CAUSE OF THE BUG: With mirroring, the chunk purges its mirror connection when regions are being recalculated, undoing the mirror effect!!!!
+                int lx = level.getPositionXAtInnerRegionX(this, x);
+                int ly = level.getPositionYAtInnerRegionY(this, y);
 
-        //TODO TODO TODO TODO TODO
-        //Try to implement general chunk connectivity algorithm, instead of trying to do a special mirroring case with doors, since each chunk
-        //has a chance to purge its mirrored connections when they are across neighboring regions
-    }
+                int lxoff = lx + destXOff;
+                int lyoff = ly + destYOff;
 
-    //Goes through all inner "door" chunks and calculates their connectivity, while mirroring connectivity for their connecting neighbor chunks
-    //This will allow calculating connectivity for doors without having to make a more advanced general algorithm for calculating chunk connectivity
-    private void calculateChunkConnectivityInner() {
-        foreach (Chunk doorChunk in doors) {
-            Node door = doorChunk.getNodes()[0];
-            int lx = level.getPositionXAtInnerRegionX(this, door.x);
-            int ly = level.getPositionYAtInnerRegionY(this, door.y);
+                Node dest = null;
 
-            List<uint> connections = doorChunk.getConnectionHashes();
-            bool up = !connections.Contains(doorGetQuickTopHash(door)) && isValidDestinationNodeForConnection(lx, ly + 1);
-            bool down = !connections.Contains(doorGetQuickBotHash(door)) && isValidDestinationNodeForConnection(lx, ly - 1);
-            bool left = !connections.Contains(doorGetQuickLeftHash(door)) && isValidDestinationNodeForConnection(lx - 1, ly);
-            bool right = !connections.Contains(doorGetQuickRightHash(door)) && isValidDestinationNodeForConnection(lx + 1, ly);
+                bool validOffset = level.isValidTilePosition(lxoff, lyoff);
 
-            //#Note - Since up/down/etc are only valid if the shift position is already valid, we dont need to error check shiftx, shifty
-            if (up) {
-                createDoorChunkConnection(doorChunk, door, lx, ly, 0, 1, false, ChunkConnectivity.Configuration.Horizontal);
+                if (validOffset) {
+                    Region offsetDestRegion = level.getRegionAtPosition(lxoff, lyoff);
+                    int offinnerx = level.getInnerRegionXAtPositionX(lxoff);
+                    int offinnery = level.getInnerRegionYAtPositionY(lyoff);
+
+                    Chunk offsetDestChunk = offsetDestRegion.getChunkAtNodePosition(offinnerx, offinnery);
+
+                    dest = offsetDestRegion.getNodeAtNodePosition(offinnerx, offinnery);
+                }
+
+                Node node = nodes[x, y];
+
+                Chunk chunk = getChunkAtNodePosition(node.x, node.y);
+
+                if (isNodeObstacleOrDoor(node)) {
+                    //Conclude a regular chain
+                    if (chain) {
+                        //Conclude and generate connection for chain
+                        int cslx = level.getPositionXAtInnerRegionX(this, chainStartNode.x);
+                        int csly = level.getPositionYAtInnerRegionY(this, chainStartNode.y);
+
+                        level.getChunkConnections().connectChunk(ChunkConnectivity.generateConnectivityHash(cslx, csly, chainlen, config), chainStartChunk);
+
+                        chain = false;
+                        chainlen = 0;
+                        chainStartNode = null;
+                        chainStartChunk = null;
+                    }
+                }
+                else {
+                    if (chain) {
+                        //Continue Chain
+                        chainlen++;
+                    }
+                    else {
+                        //Start chain
+                        if (validOffset && !isNodeObstacleOrDoor(dest)) {
+                            //Valid chain start
+                            chain = true;
+                            chainlen = 1;
+                            chainStartNode = node;
+                            chainStartChunk = chunk;
+                        }
+                    }
+
+                    //Check for doors in 4 cardinal directions and generate connections to them, avoids duplicates
+                    calculateAdjacentDoorConnectivityForChunkAtNode(chunk, node);
+                }
             }
-            if (down) {
-                createDoorChunkConnection(doorChunk, door, lx, ly, 0, -1, true, ChunkConnectivity.Configuration.Horizontal);
+
+            //Conclude a tail-end chain
+            if (chain) {
+                //Conclude and generate connection for chain
+                int cslx = level.getPositionXAtInnerRegionX(this, chainStartNode.x);
+                int csly = level.getPositionYAtInnerRegionY(this, chainStartNode.y);
+
+                level.getChunkConnections().connectChunk(ChunkConnectivity.generateConnectivityHash(cslx, csly, chainlen, config), chainStartChunk);
+
+                chain = false;
+                chainlen = 0;
+                chainStartNode = null;
+                chainStartChunk = null;
             }
-            if (left) {
-                createDoorChunkConnection(doorChunk, door, lx, ly, -1, 0, true, ChunkConnectivity.Configuration.Vertical);
-            }
-            if (right) {
-                createDoorChunkConnection(doorChunk, door, lx, ly, 1, 0, false, ChunkConnectivity.Configuration.Vertical);
-            }
+
+            // ***** Loop through all doors and build connectivity
         }
     }
 
-    //inner is true if the hash should be generated on top of the door node, false otherwise. See calculateChunkConnectivityInner for why things like shiftRegion aren't error checked
-    private void createDoorChunkConnection(Chunk doorChunk, Node door, int lx, int ly, int shiftx, int shifty, bool inner, ChunkConnectivity.Configuration config) {
-        Region shiftRegion = level.getRegionAtPosition(lx + shiftx, ly + shifty);
+    //Will Avoid creating duplicate connections
+    private void calculateAdjacentDoorConnectivityForChunkAtNode(Chunk chunk, Node node) {
+        int lx = level.getPositionXAtInnerRegionX(this, node.x);
+        int ly = level.getPositionYAtInnerRegionY(this, node.y);
 
-        Node shiftNode;
-        Chunk shiftChunk;
+        List<uint> connections = chunk.getConnectionHashes();
 
-        bool test = false;
-        if (isPositionEqual(shiftRegion)) {
-            //Shift Node is within our current region
-            shiftNode = nodes[door.x + shiftx, door.y + shifty];
-            shiftChunk = fillChunkMap[shiftNode.fillID];
+        uint doorTopHash = doorGetQuickTopHash(node);
+        uint doorBotHash = doorGetQuickBotHash(node);
+        uint doorLeftHash = doorGetQuickLeftHash(node);
+        uint doorRightHash = doorGetQuickRightHash(node);
+
+        bool checkTop = !connections.Contains(doorTopHash) && isValidDestinationDoorNodeForConnection(lx, ly + 1);
+        bool checkBot = !connections.Contains(doorBotHash) && isValidDestinationDoorNodeForConnection(lx, ly - 1);
+        bool checkLeft = !connections.Contains(doorLeftHash) && isValidDestinationDoorNodeForConnection(lx - 1, ly);
+        bool checkRight = !connections.Contains(doorRightHash) && isValidDestinationDoorNodeForConnection(lx + 1, ly);
+
+        if (checkTop) {
+            level.getChunkConnections().connectChunk(doorTopHash, chunk);
         }
-        else {
-            test = true;
-
-            //Shift Node is within neighboring region
-            int innerx = level.getInnerRegionXAtPositionX(lx + shiftx);
-            int innery = level.getInnerRegionYAtPositionY(ly + shifty);
-            shiftNode = shiftRegion.getNodeAtNodePosition(innerx, innery);
-            shiftChunk = shiftRegion.getChunkAtNodePosition(innerx, innery);
+        if (checkBot) {
+            level.getChunkConnections().connectChunk(doorBotHash, chunk);
         }
-
-        //Generate ChunkConnectivity hash
-        int innershiftx = (inner) ? (0) : (shiftx);
-        int innershifty = (inner) ? (0) : (shifty);
-        uint hash = ChunkConnectivity.generateConnectivityHash(lx + innershiftx, ly + innershifty, 1, config);
-
-        ChunkConnectivity connections = level.getChunkConnections();
-        connections.connectChunk(hash, doorChunk);
-        connections.connectChunk(hash, shiftChunk);
-
-        if (test) {
-            Debug.Log("Region " + shiftRegion.getColumn() + ", " + shiftRegion.getRow() + " : Node " + shiftNode.x + ", " + shiftNode.y);
-            Debug.Log("Chunk " + shiftChunk.fillID + " : Connections Count = " + shiftChunk.getConnectionHashes().Count);
+        if (checkLeft) {
+            level.getChunkConnections().connectChunk(doorLeftHash, chunk);
+        }
+        if (checkRight) {
+            level.getChunkConnections().connectChunk(doorRightHash, chunk);
         }
     }
 
-    private bool isValidDestinationNodeForConnection(int x, int y) {
-        return level.isValidTilePosition(x, y) && (level.isDoorAtGridPosition(x, y) || !level.isObstacleAtGridPosition(x, y));
+    private bool isValidDestinationNodeForConnection(int lx, int ly) {
+        return level.isValidTilePosition(lx, ly) && (level.isDoorAtGridPosition(lx, ly) || !level.isObstacleAtGridPosition(lx, ly));
+    }
+
+    private bool isValidDestinationDoorNodeForConnection(int lx, int ly) {
+        return level.isValidTilePosition(lx, ly) && (level.isDoorAtGridPosition(lx, ly));
     }
 
     public Node getNodeAtNodePosition(int x, int y) {
@@ -294,6 +339,10 @@ public class Region {
 
     private bool isNodeDoor(Node node) {
         return level.isDoorAtRegionPosition(this, node.x, node.y);
+    }
+
+    private bool isNodeObstacleOrDoor(Node node) {
+        return isNodeObstacle(node) || isNodeDoor(node);
     }
 
     public bool isValidNodeIndex(int x, int y) {

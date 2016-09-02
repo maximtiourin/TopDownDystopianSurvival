@@ -52,13 +52,7 @@ public class ChunkConnectivity {
         if (map.ContainsKey(key)) {
             List<Chunk> list = map[key];
 
-            if (list.Contains(value)) {
-                list.Remove(value);
-                return true;
-            }
-            else {
-                return false;
-            }
+            return list.Remove(value);
         }
         else {
             return false;
