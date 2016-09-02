@@ -89,7 +89,7 @@ public class Script_Window_Debug : MonoBehaviour {
                 }
             }
 
-            str += "-----------------------" + n;
+            /*str += "-----------------------" + n;
             Region test = level.getRegionAtMatrixIndex(0, 0);
             Chunk testc = test.getChunk(0);
             if (testc != null) {
@@ -107,7 +107,7 @@ public class Script_Window_Debug : MonoBehaviour {
                     str += "RealChunkConnect #" + index + " : x = " + hx + ", y = " + hy + ", len = " + hlen + ", config = " + hconfig.ToString() + n;
                     index++;
                 }
-            }
+            }*/
 
             if (levelMouse.isObstructed()) str += "Mouse over GUI" + n;
 
