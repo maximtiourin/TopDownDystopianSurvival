@@ -21,6 +21,8 @@ public class Level : MonoBehaviour, Loadable {
     private GameObject renderTilesContainer;
     private GameObject[,] renderTiles;
 
+    private GameObject pawnObjectContainer;
+
     private ulong tick;
     private float timeElapsed;
 
@@ -40,6 +42,8 @@ public class Level : MonoBehaviour, Loadable {
 
         renderTilesContainer = null;
         renderTiles = new GameObject[width, height];
+
+        pawnObjectContainer = null;
 
         tick = 0;
 
@@ -464,11 +468,17 @@ public class Level : MonoBehaviour, Loadable {
      * which are in charge of determining what should be rendered for the level in a given tile.
      * This should only be called on the initial loading of a level. Individual render tiles should be
      * modified after that when needed.
+     *
+     * Also generates the pawn object container
      */
     private void generateRenderTiles() {
         renderTilesContainer = new GameObject();
         renderTilesContainer.name = "RenderTileContainer";
         renderTilesContainer.transform.parent = this.transform;
+
+        pawnObjectContainer = new GameObject();
+        pawnObjectContainer.name = "PawnObjectContainer";
+        pawnObjectContainer.transform.parent = this.transform;
 
         //TODO Create tiles (eventually need to take into account multiple drawing techniques to properly layer tiles, and only apply relevant textures/materials/etc
         for (int x = 0; x < width; x++) {
@@ -541,6 +551,10 @@ public class Level : MonoBehaviour, Loadable {
                 regions[c, r] = new Region(this, regionWidth, regionHeight, c, r);
             }
         }
+    }
+
+    public GameObject getPawnObjectContainer() {
+        return pawnObjectContainer;
     }
 
     public void load() {

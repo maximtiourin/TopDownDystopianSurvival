@@ -68,7 +68,6 @@
     <Compile Include="Assets\Scripts\Animation\FizzikFrame.cs" />
     <Compile Include="Assets\Scripts\Animation\Objects\Weapons\TestPistol\Anim_TestPistol_Fire.cs" />
     <Compile Include="Assets\Scripts\Animation\Objects\Weapons\TestPistol\Anim_TestPistol_Idle.cs" />
-    <Compile Include="Assets\Scripts\Character\Script_Character_Instantiate.cs" />
     <Compile Include="Assets\Scripts\Collision\Collision2DListener.cs" />
     <Compile Include="Assets\Scripts\Effects\CasingEjection.cs" />
     <Compile Include="Assets\Scripts\Effects\MuzzleFlash.cs" />
@@ -114,9 +113,11 @@
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Point2D.cs" />
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Point2DList.cs" />
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Rect2D.cs" />
-    <Compile Include="Assets\Scripts\Objects\Weapons\RangedWeapon.cs" />
-    <Compile Include="Assets\Scripts\Objects\Weapons\TestPistol.cs" />
-    <Compile Include="Assets\Scripts\Objects\Weapons\Weapon.cs" />
+    <Compile Include="Assets\Scripts\Pawn\Character\Script_Character_Instantiate.cs" />
+    <Compile Include="Assets\Scripts\Pawn\Objects\Weapons\RangedWeapon.cs" />
+    <Compile Include="Assets\Scripts\Pawn\Objects\Weapons\TestPistol.cs" />
+    <Compile Include="Assets\Scripts\Pawn\Objects\Weapons\Weapon.cs" />
+    <Compile Include="Assets\Scripts\Pawn\Pawn.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Camera\Script_Camera_LevelView_Constrictor.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Camera\Script_Camera_TopDown_Zoom.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Combat\Script_Combat_PlayerGunController.cs" />
