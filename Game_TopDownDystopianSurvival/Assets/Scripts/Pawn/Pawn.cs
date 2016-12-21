@@ -5,26 +5,25 @@ using System.Collections;
  * A Pawn is an entity in the game world that holds some kind of state such as individual position, rotation, etc, and can potentially be drawn.
  * TODO - LOTS O SHIT
  */
-public abstract class Pawn : MonoBehaviour {
-    public static long GUID = 0;
-
+public abstract class Pawn {
     protected GameObject renderObject;
     protected Level level;
 
     protected long guid;
-
-	// Use this for initialization
-	void Start () {
+    
+	protected void construct() {
         renderObject = null;
         level = null;
 
-        guid = ++Pawn.GUID;
-	}
+        guid = Identifier.getGlobalUniqueIdentifier();
+    }
 	
-	// Update is called once per frame
-	void Update () {
+	protected void update() {
 	
 	}
+
+    //Initialize pawn specific info
+    protected abstract void init();
 
     /*
      * Can only be called once to generate the initial gameObject, which should be
@@ -50,6 +49,13 @@ public abstract class Pawn : MonoBehaviour {
         }
     }
 
+    public void setWorldPositionX(float x) {
+        if (renderObject != null) {
+            Vector3 v = renderObject.transform.position;
+            renderObject.transform.position = new Vector3(x, v.y, v.z);
+        }
+    }
+
     /*
      * Raw world position y based on transform of renderObject
      */
@@ -59,6 +65,35 @@ public abstract class Pawn : MonoBehaviour {
         }
         else {
             return 0f;
+        }
+    }
+
+    public void setWorldPositionY(float y) {
+        if (renderObject != null) {
+            Vector3 v = renderObject.transform.position;
+            renderObject.transform.position = new Vector3(v.x, y, v.z);
+        }
+    }
+
+    public Vector3 getWorldPosition() {
+        if (renderObject != null) {
+            return renderObject.transform.position;
+        }
+        else {
+            return Vector3.zero;
+        }
+    }
+
+    public void setWorldPosition(Vector3 v) {
+        if (renderObject != null) {
+            renderObject.transform.position = new Vector3(v.x, v.y, v.z);
+        }
+    }
+
+    public void setWorldPosition(float x, float y) {
+        if (renderObject != null) {
+            Vector3 v = renderObject.transform.position;
+            renderObject.transform.position = new Vector3(x, y, v.z);
         }
     }
 

@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class Level : MonoBehaviour, Loadable {
+    //TODO - DEBUG TEMPORARY VARIABLE FOR QUICK TESTING
+    public Sprite TestCharacterSprite;
+
     private int width = 256;
     private int height = 256;
 
@@ -543,6 +546,10 @@ public class Level : MonoBehaviour, Loadable {
 
     public int getPositionYAtInnerRegionY(Region region, int y) {
         return (region.getHeight() * region.getRow()) + y;
+    }
+
+    public Vector3 getCenterWorldPositionAtLevelPosition(int x, int y) {
+        return new Vector3((float) (x + .5f), (float) (y + .5f), 0f);
     }
 
     private void initRegions() {

@@ -114,6 +114,7 @@
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Point2DList.cs" />
     <Compile Include="Assets\Scripts\Lib\poly2tri\Utility\Rect2D.cs" />
     <Compile Include="Assets\Scripts\Pawn\Character\Script_Character_Instantiate.cs" />
+    <Compile Include="Assets\Scripts\Pawn\Character\TestCharacter.cs" />
     <Compile Include="Assets\Scripts\Pawn\Objects\Weapons\RangedWeapon.cs" />
     <Compile Include="Assets\Scripts\Pawn\Objects\Weapons\TestPistol.cs" />
     <Compile Include="Assets\Scripts\Pawn\Objects\Weapons\Weapon.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="Assets\Scripts\World\ChunkConnectivity.cs" />
     <Compile Include="Assets\Scripts\World\Component_TileDataGenerator.cs" />
     <Compile Include="Assets\Scripts\World\Debug\DebugLevelOverlay.cs" />
+    <Compile Include="Assets\Scripts\World\Identifier.cs" />
     <Compile Include="Assets\Scripts\World\Level.cs" />
     <Compile Include="Assets\Scripts\World\Loadable.cs" />
     <Compile Include="Assets\Scripts\World\Loader.cs" />

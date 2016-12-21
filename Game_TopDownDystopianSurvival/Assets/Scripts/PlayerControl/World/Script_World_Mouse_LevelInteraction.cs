@@ -43,6 +43,7 @@ public class Script_World_Mouse_LevelInteraction : MonoBehaviour {
                 tilex = x;
                 tiley = y;
 
+                //TODO TEMPORARY DEBUG INTERACTION
                 if (Input.GetMouseButtonUp(0)) {
                     level.createFloorTileAtPosition(x, y, "test01");
                 }
@@ -51,6 +52,9 @@ public class Script_World_Mouse_LevelInteraction : MonoBehaviour {
                 }
                 else if (Input.GetMouseButtonUp(2)) {
                     level.createTestDoorAtPosition(x, y);
+                }
+                else if (Input.GetMouseButtonUp(3)) {
+                    TestCharacter.CreateTestCharacterAtWorldPosition(level, level.getCenterWorldPositionAtLevelPosition(x, y));
                 }
             }
         }
