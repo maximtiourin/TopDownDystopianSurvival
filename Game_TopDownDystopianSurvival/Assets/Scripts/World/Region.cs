@@ -19,6 +19,8 @@ public class Region {
     private Dictionary<int, Chunk> fillChunkMap; //Hashmap mapping fillIds to Chunks within the region
     private int fillID; //A unique identifier denoting a subset of connected nodes within the region (which get represented by a chunk)
 
+    private List<Pawn> pawns; //List of all pawns this region has current ownership over
+
     public Region(Level level, int width, int height, int column, int row) {
         this.level = level;
 
@@ -33,6 +35,8 @@ public class Region {
 
         initChunks();
         resetFillID();
+
+        pawns = new List<Pawn>();
     }
 
     private void initNodes() {
@@ -50,7 +54,7 @@ public class Region {
     }
 
     public void calculateRegion() {
-        //Remove this region's chunks from the connectivity map
+        //Remove this region's chunks from the connectivity map, also disown all pawns for each chunk
         foreach (Chunk chunk in chunks) {
             List<uint> connections = chunk.getConnectionHashes();
 
@@ -60,7 +64,13 @@ public class Region {
                 level.getChunkConnections().disconnectChunk(hash, chunk);
                 index++;
             }
+
+            chunk.disownPawns();
         }
+
+        //Store disowned pawns for batch recalculation in level, then remove pawn ownership
+        foreach (Pawn pawn in pawns) level.addPawnToBatchOwnershipSet(pawn);
+        disownPawns();
 
         //Clean up all region data in preparation for new calculations
         initNodes();
@@ -83,6 +93,28 @@ public class Region {
         calculateChunkConnectivityEdge(width - 1, width - 1, 0, height - 1, 1, 0, 1, 0, ChunkConnectivity.Configuration.Vertical);      //Right
         calculateChunkConnectivityDoors();
         calculateChunkConnectivityInnerToDoors();
+    }
+
+    public void addPawnOwnership(Pawn pawn) {
+        pawns.Add(pawn);
+        pawn.setCurrentRegion(this);
+    }
+
+    public void removePawnOwnership(Pawn pawn) {
+        pawns.Remove(pawn);
+        pawn.setCurrentRegion(null);
+    }
+
+    public List<Pawn> getPawns() {
+        return pawns;
+    }
+
+    public void disownPawns() {
+        foreach (Pawn pawn in pawns) {
+            pawn.setCurrentRegion(null);
+        }
+
+        pawns.Clear();
     }
 
     //Goes through all appropriate nodes and generates chunk connectivity information for the appropriate chunks.

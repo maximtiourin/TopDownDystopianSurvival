@@ -89,6 +89,12 @@ public class Script_Window_Debug : MonoBehaviour {
                     str += "OverlayChunkConnect #" + index + " : x = " + hx + ", y = " + hy + ", len = " + hlen + ", config = " + hconfig.ToString() + n;
                     index++;
                 }
+
+                //List pawn ownership
+                str += "Chunk Pawns: " + n;
+                foreach (Pawn pawn in dbo.chunk.getPawns()) {
+                    str += pawn.getName() + n;
+                } 
             }
 
             /*str += "-----------------------" + n;

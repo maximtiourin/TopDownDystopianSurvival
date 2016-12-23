@@ -25,6 +25,7 @@ public class Level : MonoBehaviour, Loadable {
     private GameObject[,] renderTiles;
 
     private GameObject pawnObjectContainer;
+    private HashSet<Pawn> pawnBatchOwnershipSet; //Current Set of pawns which need their region/chunk ownership recalculated
 
     private bool loaded;
 
@@ -44,6 +45,7 @@ public class Level : MonoBehaviour, Loadable {
         renderTiles = new GameObject[width, height];
 
         pawnObjectContainer = null;
+        pawnBatchOwnershipSet = new HashSet<Pawn>();
 
         loaded = false;
     }
@@ -157,13 +159,17 @@ public class Level : MonoBehaviour, Loadable {
     private void calculateRegions() {
         for (int c = 0; c < regionColumns; c++) {
             for (int r = 0; r < regionRows; r++) {
-                calculateRegion(c, r);
+                calculateRegion(c, r, true);
             }
         }
+
+        calculatePawnBatchOwnership();
     }
 
-    private void calculateRegion(int column, int row) {
+    private void calculateRegion(int column, int row, bool batch = false) {
         regions[column, row].calculateRegion();
+
+        if (!batch) calculatePawnBatchOwnership();
     }
 
     //Recalculates the region the tile is in, as well as any bordering regions if they might be affected
@@ -179,37 +185,39 @@ public class Level : MonoBehaviour, Loadable {
         int c = getRegionXAtPositionX(x);
         int r = getRegionYAtPositionY(y);
 
-        recalculateRegion(c, r);
+        recalculateRegion(c, r, true);
 
         if (left) {
-            recalculateRegion(c - 1, r);
+            recalculateRegion(c - 1, r, true);
         }
         if (right) {
-            recalculateRegion(c + 1, r);
+            recalculateRegion(c + 1, r, true);
         }
         if (up) {
-            recalculateRegion(c, r + 1);
+            recalculateRegion(c, r + 1, true);
         }
         if (down) {
-            recalculateRegion(c, r - 1);
+            recalculateRegion(c, r - 1, true);
         }
         if (left && up) {
-            recalculateRegion(c - 1, r + 1);
+            recalculateRegion(c - 1, r + 1, true);
         }
         if (right && up) {
-            recalculateRegion(c + 1, r + 1);
+            recalculateRegion(c + 1, r + 1, true);
         }
         if (left && down) {
-            recalculateRegion(c - 1, r - 1);
+            recalculateRegion(c - 1, r - 1, true);
         }
         if (right && down) {
-            recalculateRegion(c + 1, r - 1);
+            recalculateRegion(c + 1, r - 1, true);
         }
+
+        calculatePawnBatchOwnership();
     }
 
-    private void recalculateRegion(int c, int r) {
+    private void recalculateRegion(int c, int r, bool batch = false) {
         if (isValidRegionPosition(c, r)) {
-            calculateRegion(c, r);
+            calculateRegion(c, r, batch);
         }
     }
 
@@ -494,6 +502,89 @@ public class Level : MonoBehaviour, Loadable {
 
                 updateRenderTileAtPosition(x, y);
             }
+        }
+    }
+
+    /*
+     * Adds the pawn to the batch ownership set, which is used to batch calculate region/chunk ownership of pawns, usually after
+     * region calculation.
+     */
+    public void addPawnToBatchOwnershipSet(Pawn pawn) {
+        pawnBatchOwnershipSet.Add(pawn);
+    }
+
+    /*
+     * Calculates the pawn region/chunk ownership for all pawns in the batch ownership set, then clears it
+     */
+    public void calculatePawnBatchOwnership() {
+        foreach (Pawn pawn in pawnBatchOwnershipSet) {
+            updatePawnRegionOwnership(pawn);
+            updatePawnChunkOwnership(pawn);
+        }
+
+        pawnBatchOwnershipSet.Clear();
+    }
+
+    /*
+     * Determines which chunk the pawn belongs to, if any, and properly updates it, as well as
+     * the previous chunk the pawn belonged to, if any.
+     */
+    public void updatePawnChunkOwnership(Pawn pawn) {
+        int x = getPositionX(pawn.getWorldPositionX());
+        int y = getPositionY(pawn.getWorldPositionY());
+
+        Chunk currentChunk = pawn.getCurrentChunk();
+        Region currentRegion = pawn.getCurrentRegion();
+
+        bool sameChunk = false;
+        //Determine new chunk ownership, if it exists
+        if (isValidTilePosition(x, y)) {
+            //Valid pawn position, do switch operations for chunk ownership
+            Region region = getRegionAtPosition(x, y);
+
+            int innerx = getInnerRegionXAtPositionX(x);
+            int innery = getInnerRegionYAtPositionY(y);
+
+            Chunk newChunk = region.getChunkAtNodePosition(innerx, innery);
+
+            if (newChunk != null) {
+                //We have a valid new chunk for the pawn, check to make sure its not the same as the current
+                if (currentChunk == null || !currentChunk.Equals(newChunk)) {
+                    //Chunks are not the same, do switch operations for chunk ownership
+                    newChunk.addPawnOwnership(pawn);
+                }
+                else {
+                    sameChunk = true;
+                }
+            }
+        }
+
+        //Clean up old chunk ownership, if any exists and it isnt the same chunk
+        if (currentChunk != null && !sameChunk) {
+            currentChunk.removePawnOwnership(pawn);
+        }
+    }
+
+    /*
+     * Determines which region the pawn belongs to, if any, and properly updates it, as well as
+     * the previous region the pawn belonged to, if any.
+     */
+    public void updatePawnRegionOwnership(Pawn pawn) {
+        int x = getPositionX(pawn.getWorldPositionX());
+        int y = getPositionY(pawn.getWorldPositionY());
+
+        Region currentRegion = pawn.getCurrentRegion();
+
+        if (isValidTilePosition(x, y)) {
+            //Valid pawn position, do switch operations for region ownership
+            Region region = getRegionAtPosition(x, y);
+
+            region.addPawnOwnership(pawn);
+        }
+
+        //Clean up old region ownership, if any exists
+        if (currentRegion != null) {
+            currentRegion.removePawnOwnership(pawn);
         }
     }
 

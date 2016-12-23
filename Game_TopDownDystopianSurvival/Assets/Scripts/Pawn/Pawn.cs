@@ -11,11 +11,17 @@ public abstract class Pawn {
     protected GameObject renderObject;
     protected Level level;
 
+    protected Chunk currentChunk;
+    protected Region currentRegion;
+
     protected long guid;
     
 	protected void construct() {
         renderObject = null;
         level = null;
+
+        currentChunk = null;
+        currentRegion = null;
 
         guid = ++GUID;
     }
@@ -40,6 +46,25 @@ public abstract class Pawn {
     }
 
     /*
+     * Returns the current chunk this pawn belongs to, if any.
+     */
+    public Chunk getCurrentChunk() {
+        return currentChunk;
+    }
+
+    public void setCurrentChunk(Chunk chunk) {
+        currentChunk = chunk;
+    }
+
+    public Region getCurrentRegion() {
+        return currentRegion;
+    }
+
+    public void setCurrentRegion(Region region) {
+        currentRegion = region;
+    }
+
+    /*
      * Raw world position x based on transform of renderObject
      */
     public float getWorldPositionX() {
@@ -55,6 +80,7 @@ public abstract class Pawn {
         if (renderObject != null) {
             Vector3 v = renderObject.transform.position;
             renderObject.transform.position = new Vector3(x, v.y, v.z);
+            setWorldPositionInternal();
         }
     }
 
@@ -74,6 +100,7 @@ public abstract class Pawn {
         if (renderObject != null) {
             Vector3 v = renderObject.transform.position;
             renderObject.transform.position = new Vector3(v.x, y, v.z);
+            setWorldPositionInternal();
         }
     }
 
@@ -86,9 +113,21 @@ public abstract class Pawn {
         }
     }
 
+    /*
+     * Updates all important structures pertaining to its position, all other public position modifiers
+     * should end up calling this one way or another;
+     */
+    protected void setWorldPositionInternal() {
+        if (level != null) {
+            level.updatePawnRegionOwnership(this);
+            level.updatePawnChunkOwnership(this);
+        }
+    }
+
     public void setWorldPosition(Vector3 v) {
         if (renderObject != null) {
             renderObject.transform.position = new Vector3(v.x, v.y, v.z);
+            setWorldPositionInternal();
         }
     }
 
@@ -96,6 +135,7 @@ public abstract class Pawn {
         if (renderObject != null) {
             Vector3 v = renderObject.transform.position;
             renderObject.transform.position = new Vector3(x, y, v.z);
+            setWorldPositionInternal();
         }
     }
 
@@ -109,5 +149,14 @@ public abstract class Pawn {
 
     public long getGUID() {
         return guid;
+    }
+
+    public string getName() {
+        if (renderObject != null) {
+            return renderObject.name;
+        }
+        else {
+            return "UNNAMED PAWN .:_" + guid;
+        }
     }
 }
