@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 /*
  * A world encompasses all gameplay mechanics such as levels and other types of game screens.
+ *
+ * TODO - Change flow so that a world instantiates level components, instead of the level component already existing like it does now.
  */
 public class World : MonoBehaviour, Loadable {
     private bool loaded = false;
