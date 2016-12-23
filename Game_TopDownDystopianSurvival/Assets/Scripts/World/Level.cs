@@ -26,9 +26,6 @@ public class Level : MonoBehaviour, Loadable {
 
     private GameObject pawnObjectContainer;
 
-    private ulong tick;
-    private float timeElapsed;
-
     private bool loaded;
 
 	// Use this for initialization
@@ -48,8 +45,6 @@ public class Level : MonoBehaviour, Loadable {
 
         pawnObjectContainer = null;
 
-        tick = 0;
-
         loaded = false;
     }
 	
@@ -58,14 +53,12 @@ public class Level : MonoBehaviour, Loadable {
 	void Update () {
         if (isLoaded()) {
 
-            timeElapsed += Time.deltaTime;
         }
 	}
 
     void FixedUpdate() {
         if (isLoaded()) {
 
-            tick++;
         }
     }
 
@@ -592,13 +585,5 @@ public class Level : MonoBehaviour, Loadable {
 
     public int getRegionRowCount() {
         return regionRows;
-    }
-
-    public ulong getTick() {
-        return tick;
-    }
-
-    public float getElapsedTime() {
-        return timeElapsed;
     }
 }

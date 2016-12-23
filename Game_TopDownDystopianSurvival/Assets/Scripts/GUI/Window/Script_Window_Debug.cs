@@ -32,8 +32,10 @@ public class Script_Window_Debug : MonoBehaviour {
 
             string str = "";
 
-            str += "FixedUpdate() Tick: " + level.getTick() + n;
-            str += "Time Elapsed: " + level.getElapsedTime() + n;
+            str += "FixedUpdate() Tick: " + GameTime.ticks + n;
+            str += "Time Elapsed: " + GameTime.realTime + n;
+            str += "GameTime Elapsed: " + GameTime.gameTime + n;
+            str += "GameTime Speed: " + GameTime.getSpeedStateString(GameTime.speedState) + n;
 
             str += "Mouse Tile X: " + tx + n;
             str += "Mouse Tile Y: " + ty + n;

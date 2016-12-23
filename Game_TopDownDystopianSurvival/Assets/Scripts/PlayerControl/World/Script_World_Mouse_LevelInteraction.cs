@@ -56,6 +56,20 @@ public class Script_World_Mouse_LevelInteraction : MonoBehaviour {
                 else if (Input.GetMouseButtonUp(3)) {
                     TestCharacter.CreateTestCharacterAtWorldPosition(level, level.getCenterWorldPositionAtLevelPosition(x, y));
                 }
+
+                //TODO TEMPORARY GAMESTATE SPEED INTERACTION
+                if (Input.GetKeyUp(KeyCode.Alpha1)) {
+                    GameTime.setSpeedState(GameTime.SPEED_STATE_NORMAL);
+                }
+                else if (Input.GetKeyUp(KeyCode.Alpha2)) {
+                    GameTime.setSpeedState(GameTime.SPEED_STATE_FASTER);
+                }
+                else if (Input.GetKeyUp(KeyCode.Alpha3)) {
+                    GameTime.setSpeedState(GameTime.SPEED_STATE_FASTEST);
+                }
+                else if (Input.GetKeyUp(KeyCode.Space)) {
+                    GameTime.togglePause();
+                }
             }
         }
         else {

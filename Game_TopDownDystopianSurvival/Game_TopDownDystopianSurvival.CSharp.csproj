@@ -134,7 +134,7 @@
     <Compile Include="Assets\Scripts\World\ChunkConnectivity.cs" />
     <Compile Include="Assets\Scripts\World\Component_TileDataGenerator.cs" />
     <Compile Include="Assets\Scripts\World\Debug\DebugLevelOverlay.cs" />
-    <Compile Include="Assets\Scripts\World\Identifier.cs" />
+    <Compile Include="Assets\Scripts\World\GameTime.cs" />
     <Compile Include="Assets\Scripts\World\Level.cs" />
     <Compile Include="Assets\Scripts\World\Loadable.cs" />
     <Compile Include="Assets\Scripts\World\Loader.cs" />
@@ -142,6 +142,7 @@
     <Compile Include="Assets\Scripts\World\Region.cs" />
     <Compile Include="Assets\Scripts\World\Tile.cs" />
     <Compile Include="Assets\Scripts\World\TileData.cs" />
+    <Compile Include="Assets\Scripts\World\World.cs" />
     <Compile Include="Assets\ThirdPartyPackages\Standard Assets\2D\Scripts\Camera2DFollow.cs" />
     <Compile Include="Assets\ThirdPartyPackages\Standard Assets\2D\Scripts\CameraFollow.cs" />
     <Compile Include="Assets\ThirdPartyPackages\Standard Assets\2D\Scripts\Platformer2DUserControl.cs" />

@@ -11,6 +11,7 @@ public class Loader : MonoBehaviour {
     private Queue<Loadable> loadables;
     private Level level;
     private Component_TileDataGenerator tileDataGenerator;
+    private World world;
 
 	// Use this for initialization
 	void Start () {
@@ -20,6 +21,8 @@ public class Loader : MonoBehaviour {
 
         tileDataGenerator = gameObject.GetComponent<Component_TileDataGenerator>();
         loadables.Enqueue(tileDataGenerator);
+        world = gameObject.GetComponent<World>();
+        loadables.Enqueue(world);
         level = gameObject.GetComponent<Level>();
         loadables.Enqueue(level);
     }

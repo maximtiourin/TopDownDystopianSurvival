@@ -6,6 +6,8 @@ using System.Collections;
  * TODO - LOTS O SHIT
  */
 public abstract class Pawn {
+    public static long GUID = 0;
+
     protected GameObject renderObject;
     protected Level level;
 
@@ -15,7 +17,7 @@ public abstract class Pawn {
         renderObject = null;
         level = null;
 
-        guid = Identifier.getGlobalUniqueIdentifier();
+        guid = ++GUID;
     }
 	
 	protected void update() {
