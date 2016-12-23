@@ -575,15 +575,21 @@ public class Level : MonoBehaviour, Loadable {
 
         Region currentRegion = pawn.getCurrentRegion();
 
+        bool sameRegion = false;
         if (isValidTilePosition(x, y)) {
             //Valid pawn position, do switch operations for region ownership
             Region region = getRegionAtPosition(x, y);
 
-            region.addPawnOwnership(pawn);
+            if (currentRegion == null || !currentRegion.Equals(region)) {
+                region.addPawnOwnership(pawn);
+            }
+            else {
+                sameRegion = true;
+            }
         }
 
-        //Clean up old region ownership, if any exists
-        if (currentRegion != null) {
+        //Clean up old region ownership, if any exists and it isnt the same region
+        if (currentRegion != null && !sameRegion) {
             currentRegion.removePawnOwnership(pawn);
         }
     }
