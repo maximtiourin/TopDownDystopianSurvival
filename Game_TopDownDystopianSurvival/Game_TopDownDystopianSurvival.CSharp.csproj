@@ -119,6 +119,7 @@
     <Compile Include="Assets\Scripts\Pawn\Objects\Weapons\TestPistol.cs" />
     <Compile Include="Assets\Scripts\Pawn\Objects\Weapons\Weapon.cs" />
     <Compile Include="Assets\Scripts\Pawn\Pawn.cs" />
+    <Compile Include="Assets\Scripts\Pawn\PawnComponent.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Camera\Script_Camera_LevelView_Constrictor.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Camera\Script_Camera_TopDown_Zoom.cs" />
     <Compile Include="Assets\Scripts\PlayerControl\Combat\Script_Combat_PlayerGunController.cs" />

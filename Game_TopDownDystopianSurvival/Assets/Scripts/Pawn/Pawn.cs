@@ -41,7 +41,11 @@ public abstract class Pawn {
         if (renderObject == null) {
             renderObject = new GameObject();
             renderObject.name = "Pawn_" + guid;
+            renderObject.layer = LayerMask.NameToLayer("Pawn");
             renderObject.transform.parent = level.getPawnObjectContainer().transform;
+
+            PawnComponent comp = renderObject.AddComponent<PawnComponent>();
+            comp.pawn = this;
         }
     }
 
@@ -56,6 +60,9 @@ public abstract class Pawn {
         currentChunk = chunk;
     }
 
+    /*
+     * Returns the current region this pawn belongs to, if any.
+     */
     public Region getCurrentRegion() {
         return currentRegion;
     }
@@ -158,5 +165,11 @@ public abstract class Pawn {
         else {
             return "UNNAMED PAWN .:_" + guid;
         }
+    }
+
+    public static Pawn getPawnFromPawnComponent(GameObject obj) {
+        PawnComponent comp = (PawnComponent) obj.GetComponent<PawnComponent>();
+
+        return comp.pawn;
     }
 }

@@ -42,6 +42,10 @@ public class Script_Window_Debug : MonoBehaviour {
             str += "Mouse X: " + mx + n;
             str += "Mouse Y: " + my + n;
 
+            if (levelMouse.selectedPawn != null) {
+                str += "Selected Pawn: " + levelMouse.selectedPawn.getName() + n;
+            }
+
             uint tile = level.getTileAtPosition(tx, ty);
 
             uint tileid = Tile.getTileId(tile);

@@ -15,21 +15,24 @@ public class TestCharacter : Pawn {
     protected override void init() {
         generateRenderObject();
 
+        //Sprite
         SpriteRenderer rend = renderObject.AddComponent<SpriteRenderer>();
-
         rend.sortingLayerName = "OtherCharacter";
-
         rend.sprite = level.TestCharacterSprite;
+
+        //Collider
+        BoxCollider2D collider = renderObject.AddComponent<BoxCollider2D>();
+        collider.size = new Vector2(.8f, 1.3f);
     }
 
     /*
-     * TODO - testing method, all pawn translation should happen using level logic, the setWorldPosition are just helped methods, so a level
+     * TODO - testing method, all pawn translation should happen using level logic, the setWorldPosition are just helper methods, so a level
      * should keep track of moving pawns, and what chunks or regions they are contained within.
      */
     public static void CreateTestCharacterAtWorldPosition(Level level, Vector3 pos) {
         TestCharacter pawn = new TestCharacter();
         pawn.construct();
-        pawn.level = level;
+        pawn.setLevelContainer(level);
         pawn.init();
         pawn.setWorldPosition(pos);
     }
