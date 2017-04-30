@@ -7,10 +7,13 @@ namespace Fizzik {
     public class ColorPalette : FizzikSubWindow {
         public static string defaultTitle = "Color Palette";
 
+        private FizzikSpriteEditor editor;
         private Rect currentRect;
         private int windowID;
 
-        public ColorPalette() {
+        public ColorPalette(FizzikSpriteEditor editor) {
+            this.editor = editor;
+
             loadUserSettings();
         }
 

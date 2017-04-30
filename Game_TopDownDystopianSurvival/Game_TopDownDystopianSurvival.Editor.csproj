@@ -130,6 +130,8 @@
     <Compile Include="Assets\Scripts\Editor\FizzikAnimation\EditorWindows\FizzikSpriteEditor.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikAnimation\EditorWindows\Interfaces\FizzikSubWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikAnimation\EditorWindows\ToolPalette.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\Utility\RectUtility.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\Utility\ResizeEvent.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\ThirdPartyPackages\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />

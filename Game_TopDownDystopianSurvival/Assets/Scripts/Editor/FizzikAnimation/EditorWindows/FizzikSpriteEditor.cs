@@ -23,6 +23,16 @@ namespace Fizzik {
 
         protected FizzikSprite workingSprite;
 
+        //Canvas variables
+        protected Matrix4x4 previousGUIMatrix;
+        const float minCanvasZoom = .2f;
+        const float maxCanvasZoom = 10f;
+        const float incCanvasZoom = .2f;
+        protected Rect canvasZoomArea;
+        protected float canvasZoom;
+        protected Vector2 canvasZoomOrigin;
+
+        protected Rect previousEditorRect; //Rect used to keep track of any window resizing changes as a result of no OnResize events in unity
         protected bool changesSaved = false; //Flag used in the determining of the current save state of the workingSprite
         protected bool mouseInsideEditor = false; //Flag used to keep track of the mouse being inside/outside the editor
 
@@ -45,11 +55,11 @@ namespace Fizzik {
             //Instantiate Subwindow classes and their windows
             int subwindowID = wcid_subwindows;
 
-            editor.toolPalette = new ToolPalette();
+            editor.toolPalette = new ToolPalette(editor);
             editor.toolPalette.setWindowID(subwindowID++);
             editor.subwindows.Add(editor.toolPalette);
 
-            editor.colorPalette = new ColorPalette();
+            editor.colorPalette = new ColorPalette(editor);
             editor.colorPalette.setWindowID(subwindowID++);
             editor.subwindows.Add(editor.colorPalette);
 
@@ -58,10 +68,14 @@ namespace Fizzik {
 
             //Set window constraints
             editor.minSize = new Vector2(editor.calculateMinWidth(), editor.calculateMinHeight());
+            editor.previousEditorRect = editor.position;
 
             //Mouse flags
             editor.wantsMouseEnterLeaveWindow = true;
             editor.wantsMouseMove = true;
+
+            //TODO Canvas variables (These might need to get moved around, depending on how I want to handle user settings)
+            editor.resetCanvasZoomArea();
 
             string wpath = EditorPrefs.GetString(txt_WorkingSprite_editorprefs_pathkey, txt_WorkingSprite_editorprefs_pathnull);
 
@@ -79,10 +93,17 @@ namespace Fizzik {
          * Handles the primary logic of displaying and interacting with the Editor window
          */
         void OnGUI() {
+            //Enforce init
             if (!hasInit) {
                 Init();
             }
 
+            //Track editor resizing event
+            if (!position.Equals(previousEditorRect)) {
+                OnResize(new ResizeEvent(previousEditorRect, position));
+            }
+
+            //Current event QoL helper
             Event e = Event.current;
 
             /****************************************************************
@@ -119,9 +140,11 @@ namespace Fizzik {
             //Window titlebar
             editor.titleContent = new GUIContent(txt_Title, EditorGUIUtility.Load("Assets/Scripts/Editor/FizzikAnimation/Images/windowlogo.png") as Texture);
 
+            //Debug test canvas
+            handleCanvas(e);
+
             //Toolbar
             handleGUIToolbar(e);
-
 
             //TODO unreachable code for quick commenting/uncommenting
             if (workingSprite == null) {
@@ -202,6 +225,9 @@ namespace Fizzik {
                 sw.setCurrentRect(GUI.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
             }
             EndWindows();
+
+            //Set previous rect
+            previousEditorRect = position;
         }
 
         /*
@@ -216,6 +242,16 @@ namespace Fizzik {
                 foreach (FizzikSubWindow sw in subwindows) {
                     sw.saveUserSettings();
                 }
+            }
+        }
+
+        /*
+         * Custom onResize event that is called in window's OnGUI if different rect dimensions have been detected between OnGUI calls
+         */
+        void OnResize(ResizeEvent e) {
+            if (e.type == ResizeEvent.ResizeEventType.MoveAndResize || e.type == ResizeEvent.ResizeEventType.Resize) {
+                //Reset canvas zooming if window has been resized
+                resetCanvasZoomArea();
             }
         }
 
@@ -307,8 +343,87 @@ namespace Fizzik {
             return minHeight;
         }
 
+        /*
+         * Zooms a rect based on a scalar, taking into account EditorWindow OnGUI begingroup matrix workaround
+         */
+        protected Rect beginZoomArea(float zoomScale, Rect area) {
+            GUI.EndGroup();
+
+            Rect zoomArea = RectUtility.scaleBy(area, 1f / zoomScale, RectUtility.topLeft(area));
+            zoomArea.y += dss_EditorWindow_heightOffset;
+
+            GUI.BeginGroup(zoomArea);
+
+            previousGUIMatrix = GUI.matrix;
+            Matrix4x4 translate = Matrix4x4.TRS(RectUtility.topLeft(zoomArea), Quaternion.identity, Vector3.one);
+            Matrix4x4 scale = Matrix4x4.Scale(new Vector3(zoomScale, zoomScale, 1f));
+            GUI.matrix = translate * scale * translate.inverse * GUI.matrix;
+
+            return zoomArea;
+        }
+
+        protected void endZoomArea() {
+            GUI.matrix = previousGUIMatrix;
+            GUI.EndGroup();
+            GUI.BeginGroup(new Rect(0f, dss_EditorWindow_heightOffset, Screen.width, Screen.height));
+        }
+
+        public void resetCanvasZoomArea() {
+            canvasZoom = 1f;
+            canvasZoomOrigin = Vector2.zero; //Reset the zoom origin
+            canvasZoomArea = new Rect(0f, 0f + dss_Toolbar_height, position.size.x, position.size.y - dss_Toolbar_height);
+        }
+
+        protected Vector2 getWindowCoordsToZoomCoords(Vector2 windowCoords) {
+            return (windowCoords - RectUtility.topLeft(canvasZoomArea)) / canvasZoom + canvasZoomOrigin;
+        }
+
+        /*
+         * TODO, lots of things to implement, currently just testing zoom/panning of prototype canvas
+         */
+        protected void handleCanvas(Event e) {
+            //Handle zooming from mousewheel scrolling event
+            if (e.type == EventType.ScrollWheel) {
+                Vector2 mousePos = e.mousePosition;
+                Vector2 delta = e.delta;
+                Vector2 zoomMousePos = getWindowCoordsToZoomCoords(mousePos);
+                float scrollNormalizedDelta = -(delta.y / Mathf.Abs(delta.y));
+
+                float prevCanvasZoom = canvasZoom;
+                canvasZoom = Mathf.Clamp(canvasZoom + (scrollNormalizedDelta * incCanvasZoom), minCanvasZoom, maxCanvasZoom);
+                canvasZoomOrigin += (zoomMousePos - canvasZoomOrigin) - (prevCanvasZoom / canvasZoom) * (zoomMousePos - canvasZoomOrigin);
+
+                e.Use();
+            }
+            
+            //Handle panning from mousewheel dragging event
+            if (e.type == EventType.MouseDrag && e.button == 2) {
+                Vector2 delta = -e.delta;
+                delta /= canvasZoom;
+                canvasZoomOrigin += delta;
+
+                e.Use();
+            }
+
+            //Canvas content
+            beginZoomArea(canvasZoom, canvasZoomArea);
+
+            float hw = canvasZoomArea.size.x / 2f;
+            float hh = canvasZoomArea.size.y / 2f;
+            float boxw = 100;
+            float boxh = 100;
+            float hboxw = boxw / 2f;
+            float hboxh = boxh / 2f;
+            Vector2 zo = canvasZoomOrigin; //Zoom origin QoL helper
+
+            GUI.Box(new Rect(hw - hboxw - zo.x, hh - hboxh - zo.y, boxw, boxh), "Text Box please ignore");
+
+            endZoomArea();
+        }
+
         protected void handleGUIToolbar(Event e) {
             GUIStyle toolbarStyle = new GUIStyle(EditorStyles.toolbar);
+            toolbarStyle.padding = new RectOffset(0, 0, 0, 0);
 
             GUIStyle menuButtonStyle = new GUIStyle(EditorStyles.toolbarButton);
             menuButtonStyle.margin = new RectOffset(0, 0, 0, 0);
@@ -338,6 +453,7 @@ namespace Fizzik {
          ---------------------------*/
         public static Rect dss_Editor_position = new Rect(150, 150, 1067, 600);
         const float dss_Toolbar_height = 20f;
+        const float dss_EditorWindow_heightOffset = 21f;
 
         /*-------------------------- 
          * ControlId constants

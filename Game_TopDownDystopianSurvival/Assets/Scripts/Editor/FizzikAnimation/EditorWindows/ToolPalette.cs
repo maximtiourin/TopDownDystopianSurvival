@@ -10,10 +10,13 @@ namespace Fizzik {
     public class ToolPalette : FizzikSubWindow {
         public static string defaultTitle = "Tool Palette";
 
+        private FizzikSpriteEditor editor;
         private Rect currentRect;
         private int windowID;
 
-        public ToolPalette() {
+        public ToolPalette(FizzikSpriteEditor editor) {
+            this.editor = editor;
+
             loadUserSettings();
         }
 
@@ -24,6 +27,10 @@ namespace Fizzik {
 
             if (GUILayout.Button("testbtn")) {
                 EditorUtility.DisplayDialog("test", "msg", "ok");
+            }
+
+            if (GUILayout.Button("Reset Zoom")) {
+                editor.resetCanvasZoomArea();
             }
 
             EditorGUILayout.EndVertical();
