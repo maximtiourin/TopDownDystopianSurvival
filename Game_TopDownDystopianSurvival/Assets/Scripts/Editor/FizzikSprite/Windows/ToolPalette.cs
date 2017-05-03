@@ -23,10 +23,8 @@ namespace Fizzik {
         public void handleGUI(int windowID) {
             EditorGUILayout.BeginVertical();
 
-            EditorGUILayout.LabelField("[PB][CP]");
-
-            if (GUILayout.Button("testbtn")) {
-                EditorUtility.DisplayDialog("test", "msg", "ok");
+            if (GUILayout.Button("Toggle Grid")) {
+                editor.toggleGridOverlay();
             }
 
             if (GUILayout.Button("Reset Zoom")) {

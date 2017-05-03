@@ -4,6 +4,7 @@ using System.IO;
 using UnityEngine;
 using UnityEditor;
 using System;
+using System.Linq;
 
 namespace Fizzik {
     /*
@@ -17,7 +18,7 @@ namespace Fizzik {
         public static FizzikSpriteEditor editor;
 
         protected List<FizzikSubWindow> subwindows;
-        protected List<FizzikSubWindow> reversedSubwindows; //Useful for getting the subwindows in order of their depth, from front to back.
+        protected List<FizzikMenuOptionsWindow> menuwindows;
         protected ToolPalette toolPalette;
         protected ColorPalette colorPalette;
 
@@ -25,12 +26,16 @@ namespace Fizzik {
 
         //Canvas variables
         protected Matrix4x4 previousGUIMatrix;
-        const float minCanvasZoom = .2f;
-        const float maxCanvasZoom = 10f;
-        const float incCanvasZoom = .2f;
+        const float minCanvasZoom = 1f;
+        const float maxCanvasZoom = 30f;
+        const float incCanvasZoom = 1f;
         protected Rect canvasZoomArea;
         protected float canvasZoom;
         protected Vector2 canvasZoomOrigin;
+        protected bool gridOverlayEnabled;
+        protected int gridOverlayCellWidth;
+        protected int gridOverlayCellHeight;
+        protected Color gridOverlayColor;
 
         protected Rect previousEditorRect; //Rect used to keep track of any window resizing changes as a result of no OnResize events in unity
         protected bool changesSaved = false; //Flag used in the determining of the current save state of the workingSprite
@@ -48,6 +53,7 @@ namespace Fizzik {
 
             //Instantiate structures
             editor.subwindows = new List<FizzikSubWindow>();
+            editor.menuwindows = new List<FizzikMenuOptionsWindow>();
 
             //Load user settings
             editor.loadUserSettings();
@@ -63,9 +69,6 @@ namespace Fizzik {
             editor.colorPalette.setWindowID(subwindowID++);
             editor.subwindows.Add(editor.colorPalette);
 
-            editor.reversedSubwindows = new List<FizzikSubWindow>(editor.subwindows);
-            editor.reversedSubwindows.Reverse();
-
             //Set window constraints
             editor.minSize = new Vector2(editor.calculateMinWidth(), editor.calculateMinHeight());
             editor.previousEditorRect = editor.position;
@@ -76,6 +79,9 @@ namespace Fizzik {
 
             //TODO Canvas variables (These might need to get moved around, depending on how I want to handle user settings)
             editor.resetCanvasZoomArea();
+
+            //Load Resources
+            editor.tex_windowlogo = Resources.Load<Texture>(editor.rsc_windowlogo);
 
             string wpath = EditorPrefs.GetString(txt_WorkingSprite_editorprefs_pathkey, txt_WorkingSprite_editorprefs_pathnull);
 
@@ -106,26 +112,6 @@ namespace Fizzik {
             //Current event QoL helper
             Event e = Event.current;
 
-            /****************************************************************
-                ******** ---> Handle Mouse Events
-                ****************************************************************/
-            //DEBUGGING UTILITY BLOCK
-            /*if (e.isMouse && e.type == EventType.MouseMove) {
-                Vector2 mpos = e.mousePosition;
-
-                foreach (FizzikSubWindow sw in reversedSubwindows) {
-                    if (sw.getCurrentRect().Contains(mpos)) {
-                        editor.titleContent = new GUIContent("mouseinside");
-                        break;
-                    }
-                    else {
-                        editor.titleContent = new GUIContent("mouseoutside");
-                    }
-                }
-
-                editor.Repaint();
-            }*/
-
             //TODO MOUSE ENTER/LEAVE
             if (e.type == EventType.MouseEnterWindow) {
                 mouseInsideEditor = true;
@@ -138,7 +124,7 @@ namespace Fizzik {
              ******** ---> Begin Application content
              ****************************************************************/
             //Window titlebar
-            editor.titleContent = new GUIContent(txt_Title, EditorGUIUtility.Load("Assets/Scripts/Editor/FizzikAnimation/Images/windowlogo.png") as Texture);
+            editor.titleContent = new GUIContent(txt_Title, tex_windowlogo);
 
             //Debug test canvas
             handleCanvas(e);
@@ -220,6 +206,7 @@ namespace Fizzik {
 
             //Debug test subwindows
             BeginWindows();
+            //Subwindows
             foreach (FizzikSubWindow sw in subwindows) {
                 sw.clampInsideRect(new Rect(0f, dss_Toolbar_height, position.size.x, position.size.y - dss_Toolbar_height));
                 sw.setCurrentRect(GUI.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
@@ -242,6 +229,24 @@ namespace Fizzik {
                 foreach (FizzikSubWindow sw in subwindows) {
                     sw.saveUserSettings();
                 }
+
+                //Cleanup any remaining menuwindows
+                if (menuwindows != null && menuwindows.Count > 0) {
+                    foreach (FizzikMenuOptionsWindow mw in menuwindows) {
+                        mw.closeWindow();
+                    }
+                    menuwindows.Clear();
+                }
+            }
+        }
+
+        void OnFocus() {
+            //Cleanup any currently open menuwindows
+            if (menuwindows != null && menuwindows.Count > 0) {
+                foreach (FizzikMenuOptionsWindow mw in menuwindows) {
+                    mw.closeWindow();
+                }
+                menuwindows.Clear();
             }
         }
 
@@ -288,19 +293,43 @@ namespace Fizzik {
         }
 
         public void loadUserSettings() {
+            //Window Position
             position = new Rect(
                 EditorPrefs.GetFloat(txt_editorprefs_rectx, dss_Editor_position.x),
                 EditorPrefs.GetFloat(txt_editorprefs_recty, dss_Editor_position.y),
                 EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_Editor_position.size.x),
                 EditorPrefs.GetFloat(txt_editorprefs_recth, dss_Editor_position.size.y)
             );
+
+            //Grid Overlay
+            gridOverlayEnabled = EditorPrefs.GetBool(txt_GridOverlay_editorprefs_pathkey, bool_GridOverlay_editorprefs_default);
+            setGridOverlayCellWidth(EditorPrefs.GetInt(txt_GridOverlay_CellWidth_editorprefs_pathkey, int_GridOverlay_CellWidth_editorprefs_default));
+            setGridOverlayCellHeight(EditorPrefs.GetInt(txt_GridOverlay_CellHeight_editorprefs_pathkey, int_GridOverlay_CellHeight_editorprefs_default));
+            setGridOverlayColor(
+                new Color(
+                    EditorPrefs.GetFloat(txt_GridOverlay_ColorR_editorprefs_pathkey, float_GridOverlay_ColorR_editorprefs_default),
+                    EditorPrefs.GetFloat(txt_GridOverlay_ColorG_editorprefs_pathkey, float_GridOverlay_ColorG_editorprefs_default),
+                    EditorPrefs.GetFloat(txt_GridOverlay_ColorB_editorprefs_pathkey, float_GridOverlay_ColorB_editorprefs_default),
+                    EditorPrefs.GetFloat(txt_GridOverlay_ColorA_editorprefs_pathkey, float_GridOverlay_ColorA_editorprefs_default)
+                )
+            );
         }
 
         public void saveUserSettings() {
+            //Window position
             EditorPrefs.SetFloat(txt_editorprefs_rectx, position.x);
             EditorPrefs.SetFloat(txt_editorprefs_recty, position.y);
             EditorPrefs.SetFloat(txt_editorprefs_rectw, position.size.x);
             EditorPrefs.SetFloat(txt_editorprefs_recth, position.size.y);
+
+            //Grid Overlay
+            EditorPrefs.SetBool(txt_GridOverlay_editorprefs_pathkey, gridOverlayEnabled);
+            EditorPrefs.SetInt(txt_GridOverlay_CellWidth_editorprefs_pathkey, gridOverlayCellWidth);
+            EditorPrefs.SetInt(txt_GridOverlay_CellHeight_editorprefs_pathkey, gridOverlayCellHeight);
+            EditorPrefs.SetFloat(txt_GridOverlay_ColorR_editorprefs_pathkey, gridOverlayColor.r);
+            EditorPrefs.SetFloat(txt_GridOverlay_ColorG_editorprefs_pathkey, gridOverlayColor.g);
+            EditorPrefs.SetFloat(txt_GridOverlay_ColorB_editorprefs_pathkey, gridOverlayColor.b);
+            EditorPrefs.SetFloat(txt_GridOverlay_ColorA_editorprefs_pathkey, gridOverlayColor.a);
         }
 
         /*
@@ -378,6 +407,10 @@ namespace Fizzik {
             return (windowCoords - RectUtility.topLeft(canvasZoomArea)) / canvasZoom + canvasZoomOrigin;
         }
 
+        protected Vector2 floorVec(Vector2 vec) {
+            return new Vector2(Mathf.FloorToInt(vec.x), Mathf.FloorToInt(vec.y));
+        }
+
         /*
          * TODO, lots of things to implement, currently just testing zoom/panning of prototype canvas
          */
@@ -392,36 +425,107 @@ namespace Fizzik {
                 float prevCanvasZoom = canvasZoom;
                 canvasZoom = Mathf.Clamp(canvasZoom + (scrollNormalizedDelta * incCanvasZoom), minCanvasZoom, maxCanvasZoom);
                 canvasZoomOrigin += (zoomMousePos - canvasZoomOrigin) - (prevCanvasZoom / canvasZoom) * (zoomMousePos - canvasZoomOrigin);
+                //canvasZoomOrigin = floorVec(canvasZoomOrigin);
 
                 e.Use();
             }
             
             //Handle panning from mousewheel dragging event
             if (e.type == EventType.MouseDrag && e.button == 2) {
+                const float zoomCurve = .12f;
+
                 Vector2 delta = -e.delta;
                 delta /= canvasZoom;
-                canvasZoomOrigin += delta;
+                canvasZoomOrigin += delta * canvasZoom * Mathf.Lerp(1f, zoomCurve, (canvasZoom - minCanvasZoom) / (maxCanvasZoom - minCanvasZoom));
+                //canvasZoomOrigin = floorVec(canvasZoomOrigin);
 
                 e.Use();
             }
 
+            //Debug TODO track mouse pos
+            Vector2 canvasMousePos = getWindowCoordsToZoomCoords(e.mousePosition);
+            float mousex = canvasMousePos.x;
+            float mousey = canvasMousePos.y;
+
             //Canvas content
             beginZoomArea(canvasZoom, canvasZoomArea);
 
-            float hw = canvasZoomArea.size.x / 2f;
-            float hh = canvasZoomArea.size.y / 2f;
-            float boxw = 100;
-            float boxh = 100;
-            float hboxw = boxw / 2f;
-            float hboxh = boxh / 2f;
+            int hw = Mathf.FloorToInt(canvasZoomArea.size.x / 2f);
+            int hh = Mathf.FloorToInt(canvasZoomArea.size.y / 2f);
+            int boxw = 300;
+            int boxh = 100;
+            int hboxw = Mathf.FloorToInt(boxw / 2f);
+            int hboxh = Mathf.FloorToInt(boxh / 2f);
             Vector2 zo = canvasZoomOrigin; //Zoom origin QoL helper
 
-            GUI.Box(new Rect(hw - hboxw - zo.x, hh - hboxh - zo.y, boxw, boxh), "Text Box please ignore");
+            string n = "\n";
+            string c = ", ";
+
+            Rect boxRect = new Rect(hw - hboxw - zo.x, hh - hboxh - zo.y, boxw, boxh);
+            int boxmousex = (int) (mousex - boxRect.x - zo.x); //Makes sure to offset the zoomOrigin so that the box is always zerod at top left
+            int boxmousey = (int) (mousey - boxRect.y - zo.y);
+
+            GUI.Box(boxRect, 
+                "Event Mouse Pos: {" + mousex + c + mousey + "}" + n +
+                "Canvas Rect: {" + canvasZoomArea.x + c + canvasZoomArea.y + c + canvasZoomArea.size.x + c + canvasZoomArea.size.y + "}" + n +
+                "Zoom Origin: {" + canvasZoomOrigin.x + c + canvasZoomOrigin.y + "}" + n +
+                "Debug Box Mouse Pos: {" + boxmousex + c + boxmousey + "}"
+                );
+
+            //Grid Overlay TODO DEBUG (Possibly Temp)
+            if (gridOverlayEnabled) {
+                const int gridOffset = 2;
+                Texture2D gridOverlay = new Texture2D(boxw + gridOffset, boxh + gridOffset);
+                gridOverlay.SetPixels(Enumerable.Repeat(Color.clear, (boxw + gridOffset) * (boxh + gridOffset)).ToArray());
+                gridOverlay.filterMode = FilterMode.Point;
+                Rect gridRect = new Rect(boxRect.x - (gridOffset / 2), boxRect.y - (gridOffset / 2), boxw + gridOffset, boxh + gridOffset);
+                int gridxspc = gridOverlayCellWidth; //Grid line every n pixels
+                int gridyspc = gridOverlayCellHeight;
+                Color gridColor = gridOverlayColor;
+                for (int row = 0; row < boxh + gridOffset; row++) {
+                    for (int col = 0; col < boxw + gridOffset; col++) {
+                        if (row % gridyspc == 0 || col % gridxspc == 0 || (row == boxh + gridOffset - 1) || (col == boxw + gridOffset - 1)) {
+                            Texture2DUtility.SetPixel(gridOverlay, col, row, gridColor);
+                        }
+                    }
+                }
+                gridOverlay.Apply();
+
+                GUI.DrawTexture(gridRect, gridOverlay);
+            }
+
+            //Pixel Hover Overlay TODO DEBUG (Possibly Temp)
+            Texture2D hoverOverlay = new Texture2D(boxw, boxh);
+            hoverOverlay.SetPixels(Enumerable.Repeat(Color.clear, boxw * boxh).ToArray());
+            hoverOverlay.filterMode = FilterMode.Point;
+            if (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh) {
+                //Mouse is inside of image, display pixel overlay
+                int px = Mathf.FloorToInt(boxmousex);
+                int py = Mathf.FloorToInt(boxmousey); //Texture coords origin is bottom left, window coords origin is top left, so flip
+
+                Color ocolor = new Color(1f, 0f, 0f, .5f);
+
+                //TODO DEBUG hacky draw pixel outline
+                for (int row = py - 1; row < py - 1 + 3; row++) {
+                    for (int col = px - 1; col < px - 1 + 3; col++) {
+                        if (row >= 0 && row < boxh && col >= 0 && col < boxw && !(row == py && col == px) && !((int) Mathf.Abs(row - py) == (int) Mathf.Abs(col - px))) {
+                            Texture2DUtility.SetPixel(hoverOverlay, col, row, ocolor);
+                        }
+                    }
+                }
+            }
+            hoverOverlay.Apply();
+
+            GUI.DrawTexture(boxRect, hoverOverlay);
 
             endZoomArea();
+
+            editor.Repaint(); //Debug Repaint
         }
 
         protected void handleGUIToolbar(Event e) {
+            const float toolbarMenuOffset = -4f;
+
             GUIStyle toolbarStyle = new GUIStyle(EditorStyles.toolbar);
             toolbarStyle.padding = new RectOffset(0, 0, 0, 0);
 
@@ -432,20 +536,92 @@ namespace Fizzik {
 
             GUILayout.BeginHorizontal(toolbarStyle, GUILayout.Width(editor.position.size.x), GUILayout.Height(dss_Toolbar_height));
 
+            float btnWidthOffset = 0f;
             if (GUILayout.Button(new GUIContent("File", ""), menuButtonStyle)) {
+                Rect btnRect = GUILayoutUtility.GetLastRect();
+                btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
 
+                GenericMenu menu = new GenericMenu();
+                menu.AddItem(new GUIContent("Create New Sprite"), false, () => {
+                    
+                });
+                menu.AddItem(new GUIContent("Open Existing Sprite"), false, () => {
+
+                });
+
+                menu.AddSeparator("");
+
+                menu.AddItem(new GUIContent("Export Frames to PNGs"), false, () => {
+
+                });
+
+                menu.DropDown(btnRect);
             }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
             if (GUILayout.Button(new GUIContent("Edit", ""), menuButtonStyle)) {
 
             }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
             if (GUILayout.Button(new GUIContent("View", ""), menuButtonStyle)) {
+                Rect btnRect = GUILayoutUtility.GetLastRect();
+                btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
 
+                GenericMenu menu = new GenericMenu();
+                menu.AddItem(new GUIContent("Grid Options"), false, () => {
+                    GridOverlayOptions options = new GridOverlayOptions(this);
+                    menuwindows.Add(options);
+                    options.showOptions();
+                });
+
+                menu.DropDown(btnRect);
             }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
             if (GUILayout.Button(new GUIContent("Layer", ""), menuButtonStyle)) {
 
             }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
+            if (GUILayout.Button(new GUIContent("Window", ""), menuButtonStyle)) {
+
+            }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
 
             GUILayout.EndHorizontal();
+        }
+
+        public bool getGridOverlayEnabled() {
+            return gridOverlayEnabled;
+        }
+
+        public void setGridOverlayEnabled(bool b) {
+            gridOverlayEnabled = b;
+        }
+
+        public void toggleGridOverlay() {
+            gridOverlayEnabled = !gridOverlayEnabled;
+        }
+
+        public int getGridOverlayCellWidth() {
+            return gridOverlayCellWidth;
+        }
+
+        public void setGridOverlayCellWidth(int width) {
+            gridOverlayCellWidth = (int) Mathf.Max(1, width);
+        }
+
+        public int getGridOverlayCellHeight() {
+            return gridOverlayCellHeight;
+        }
+
+        public void setGridOverlayCellHeight(int height) {
+            gridOverlayCellHeight = (int) Mathf.Max(1, height);
+        }
+
+        public Color getGridOverlayColor() {
+            return gridOverlayColor;
+        }
+
+        public void setGridOverlayColor(Color color) {
+            gridOverlayColor = color;
         }
 
         /*-------------------------- 
@@ -462,7 +638,13 @@ namespace Fizzik {
         const int wcid_subwindows = 2000;
 
         /*-------------------------- 
-         * Text constants
+         * Editor Textures
+         ---------------------------*/
+        Texture tex_windowlogo;
+        string rsc_windowlogo = "windowlogo";
+
+        /*-------------------------- 
+         * Text constants and Editorprefs
          ---------------------------*/
         const string txt_Title = "Sprite Editor";
 
@@ -488,5 +670,20 @@ namespace Fizzik {
         const string txt_OpenExistingSprite_btn_ttip = "Opens an existing FizzikSprite asset.";
         const string txt_OpenExistingSprite_dialog_title = "Select FizzikSprite";
         const string txt_OpenExistingSprite_dialog_default = "MyNewFizzikSprite.asset";
+
+        const string txt_GridOverlay_editorprefs_pathkey = "gridOverlay";
+        const bool bool_GridOverlay_editorprefs_default = false;
+        const string txt_GridOverlay_CellWidth_editorprefs_pathkey = "gridOverlayCellWidth";
+        const int int_GridOverlay_CellWidth_editorprefs_default = 16;
+        const string txt_GridOverlay_CellHeight_editorprefs_pathkey = "gridOverlayCellHeight";
+        const int int_GridOverlay_CellHeight_editorprefs_default = 16;
+        const string txt_GridOverlay_ColorR_editorprefs_pathkey = "gridOverlayColorR";
+        const float float_GridOverlay_ColorR_editorprefs_default = 0f;
+        const string txt_GridOverlay_ColorG_editorprefs_pathkey = "gridOverlayColorG";
+        const float float_GridOverlay_ColorG_editorprefs_default = 0f;
+        const string txt_GridOverlay_ColorB_editorprefs_pathkey = "gridOverlayColorB";
+        const float float_GridOverlay_ColorB_editorprefs_default = 0f;
+        const string txt_GridOverlay_ColorA_editorprefs_pathkey = "gridOverlayColorA";
+        const float float_GridOverlay_ColorA_editorprefs_default = .2f;
     }
 }

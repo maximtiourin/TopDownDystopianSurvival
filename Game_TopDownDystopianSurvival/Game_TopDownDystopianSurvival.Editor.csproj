@@ -124,14 +124,19 @@
     <Compile Include="Assets\Editor\CrossPlatformInput\CrossPlatformInputInitialize.cs" />
     <Compile Include="Assets\Editor\Utility\EditorScript_Component_TileDataGenerator.cs" />
     <Compile Include="Assets\Editor\Utility\EditorScript_SpriteRenderer_GenerateMaterial.cs" />
-    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\AssetTypes\FizzikSprite.cs" />
-    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\CustomInspectors\FizzikSpriteInspector.cs" />
-    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\EditorWindows\ColorPalette.cs" />
-    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\EditorWindows\FizzikSpriteEditor.cs" />
-    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\EditorWindows\Interfaces\FizzikSubWindow.cs" />
-    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\EditorWindows\ToolPalette.cs" />
-    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\Utility\RectUtility.cs" />
-    <Compile Include="Assets\Scripts\Editor\FizzikAnimation\Utility\ResizeEvent.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Inspectors\FizzikSpriteInspector.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Sprite\FizzikFrame.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Sprite\FizzikLayer.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Sprite\FizzikSprite.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\RectUtility.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\ResizeEvent.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\Texture2DUtility.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\Base\FizzikMenuOptionsWindow.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\Base\FizzikSubWindow.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\ColorPalette.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\FizzikSpriteEditor.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\GridOverlayOptions.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\ToolPalette.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\ThirdPartyPackages\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
