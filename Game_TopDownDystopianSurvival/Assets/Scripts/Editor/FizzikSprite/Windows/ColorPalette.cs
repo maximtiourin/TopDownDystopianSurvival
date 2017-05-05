@@ -101,9 +101,9 @@ namespace Fizzik {
         /*-------------------------- 
          * Text constants
          ---------------------------*/
-        const string txt_editorprefs_rectx = "colorPalette_rectx";
-        const string txt_editorprefs_recty = "colorPalette_recty";
-        const string txt_editorprefs_rectw = "colorPalette_rectw";
-        const string txt_editorprefs_recth = "colorPalette_recth";
+        const string txt_editorprefs_rectx = "Fizzik.colorPalette_rectx";
+        const string txt_editorprefs_recty = "Fizzik.colorPalette_recty";
+        const string txt_editorprefs_rectw = "Fizzik.colorPalette_rectw";
+        const string txt_editorprefs_recth = "Fizzik.colorPalette_recth";
     }
 }

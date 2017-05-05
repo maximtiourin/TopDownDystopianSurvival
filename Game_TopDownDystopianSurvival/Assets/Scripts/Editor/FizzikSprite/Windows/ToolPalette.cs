@@ -104,9 +104,9 @@ namespace Fizzik {
         /*-------------------------- 
          * Text constants
          ---------------------------*/
-        const string txt_editorprefs_rectx = "toolPalette_rectx";
-        const string txt_editorprefs_recty = "toolPalette_recty";
-        const string txt_editorprefs_rectw = "toolPalette_rectw";
-        const string txt_editorprefs_recth = "toolPalette_recth";
+        const string txt_editorprefs_rectx = "Fizzik.toolPalette_rectx";
+        const string txt_editorprefs_recty = "Fizzik.toolPalette_recty";
+        const string txt_editorprefs_rectw = "Fizzik.toolPalette_rectw";
+        const string txt_editorprefs_recth = "Fizzik.toolPalette_recth";
     }
 }

@@ -22,7 +22,7 @@ namespace Fizzik {
         protected ToolPalette toolPalette;
         protected ColorPalette colorPalette;
 
-        protected FizzikSprite workingSprite;
+        protected FizzikSprite workingSprite; //The currently open fizziksprite
 
         //Canvas variables
         protected Matrix4x4 previousGUIMatrix;
@@ -37,8 +37,9 @@ namespace Fizzik {
         protected int gridOverlayCellHeight;
         protected Color gridOverlayColor;
 
-        protected Rect previousEditorRect; //Rect used to keep track of any window resizing changes as a result of no OnResize events in unity
-        protected bool changesSaved = false; //Flag used in the determining of the current save state of the workingSprite
+        //Main editor variables
+        protected Rect previousEditorRect; //Rect used to keep track of any window resizing changes as a result of not having built-in OnResize events in unity
+        protected bool changesSaved = true; //Flag used in the determining of the current save state of the workingSprite
         protected bool mouseInsideEditor = false; //Flag used to keep track of the mouse being inside/outside the editor
 
         protected bool hasInit = false;
@@ -126,8 +127,10 @@ namespace Fizzik {
             //Window titlebar
             editor.titleContent = new GUIContent(txt_Title, tex_windowlogo);
 
-            //Debug test canvas
-            handleCanvas(e);
+            //Canvas
+            if (haveWorkingSprite()) {
+                handleCanvas(e);
+            }
 
             //Toolbar
             handleGUIToolbar(e);
@@ -204,14 +207,15 @@ namespace Fizzik {
                 //TODO Subwindows should be displayed here eventually, but for now they are displayed outside of all conditional branches
             }
 
-            //Debug test subwindows
-            BeginWindows();
             //Subwindows
-            foreach (FizzikSubWindow sw in subwindows) {
-                sw.clampInsideRect(new Rect(0f, dss_Toolbar_height, position.size.x, position.size.y - dss_Toolbar_height));
-                sw.setCurrentRect(GUI.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
+            if (haveWorkingSprite()) {
+                BeginWindows();
+                foreach (FizzikSubWindow sw in subwindows) {
+                    sw.clampInsideRect(new Rect(0f, dss_Toolbar_height, position.size.x, position.size.y - dss_Toolbar_height));
+                    sw.setCurrentRect(GUI.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
+                }
+                EndWindows();
             }
-            EndWindows();
 
             //Set previous rect
             previousEditorRect = position;
@@ -288,8 +292,10 @@ namespace Fizzik {
          * closing the editor, or opening a new file aren't impeded.
          */
         protected void performAssetSave() {
-            AssetDatabase.SaveAssets();
-            changesSaved = true;
+            if (haveWorkingSprite()) {
+                AssetDatabase.SaveAssets();
+                changesSaved = true;
+            }
         }
 
         public void loadUserSettings() {
@@ -452,41 +458,52 @@ namespace Fizzik {
 
             int hw = Mathf.FloorToInt(canvasZoomArea.size.x / 2f);
             int hh = Mathf.FloorToInt(canvasZoomArea.size.y / 2f);
-            int boxw = 300;
-            int boxh = 100;
-            int hboxw = Mathf.FloorToInt(boxw / 2f);
-            int hboxh = Mathf.FloorToInt(boxh / 2f);
             Vector2 zo = canvasZoomOrigin; //Zoom origin QoL helper
 
             string n = "\n";
             string c = ", ";
 
+            //Working Sprite Texture box
+            int boxw = workingSprite.imgWidth;
+            int boxh = workingSprite.imgHeight;
+            int hboxw = Mathf.FloorToInt(boxw / 2f);
+            int hboxh = Mathf.FloorToInt(boxh / 2f);
             Rect boxRect = new Rect(hw - hboxw - zo.x, hh - hboxh - zo.y, boxw, boxh);
             int boxmousex = (int) (mousex - boxRect.x - zo.x); //Makes sure to offset the zoomOrigin so that the box is always zerod at top left
             int boxmousey = (int) (mousey - boxRect.y - zo.y);
 
-            GUI.Box(boxRect, 
+            //Debug box
+            /*GUI.Box(boxRect, 
                 "Event Mouse Pos: {" + mousex + c + mousey + "}" + n +
                 "Canvas Rect: {" + canvasZoomArea.x + c + canvasZoomArea.y + c + canvasZoomArea.size.x + c + canvasZoomArea.size.y + "}" + n +
                 "Zoom Origin: {" + canvasZoomOrigin.x + c + canvasZoomOrigin.y + "}" + n +
                 "Debug Box Mouse Pos: {" + boxmousex + c + boxmousey + "}"
-                );
+                );*/
+
+            GUI.DrawTexture(boxRect, workingSprite.getTextureFromFrame(0));
 
             //Grid Overlay TODO DEBUG (Possibly Temp)
             if (gridOverlayEnabled) {
-                const int gridOffset = 2;
-                Texture2D gridOverlay = new Texture2D(boxw + gridOffset, boxh + gridOffset);
-                gridOverlay.SetPixels(Enumerable.Repeat(Color.clear, (boxw + gridOffset) * (boxh + gridOffset)).ToArray());
+                const int gridOffset = 1;
+                Texture2D gridOverlay = new Texture2D(boxw + (2 * gridOffset), boxh + (2 * gridOffset));
+                gridOverlay.SetPixels(Enumerable.Repeat(Color.clear, (boxw + (2 * gridOffset)) * (boxh + (2 * gridOffset))).ToArray());
                 gridOverlay.filterMode = FilterMode.Point;
-                Rect gridRect = new Rect(boxRect.x - (gridOffset / 2), boxRect.y - (gridOffset / 2), boxw + gridOffset, boxh + gridOffset);
+                Rect gridRect = new Rect(boxRect.x - gridOffset, boxRect.y - gridOffset, boxw + (2 * gridOffset), boxh + (2 * gridOffset));
                 int gridxspc = gridOverlayCellWidth; //Grid line every n pixels
                 int gridyspc = gridOverlayCellHeight;
                 Color gridColor = gridOverlayColor;
-                for (int row = 0; row < boxh + gridOffset; row++) {
-                    for (int col = 0; col < boxw + gridOffset; col++) {
-                        if (row % gridyspc == 0 || col % gridxspc == 0 || (row == boxh + gridOffset - 1) || (col == boxw + gridOffset - 1)) {
+                for (int row = 0; row < boxh + (2 * gridOffset); row++) {
+                    for (int col = 0; col < boxw + (2 * gridOffset); col++) {
+                        //Draw internal grid
+                        if ((row >= gridOffset && row < gridOffset + boxh) && (col >= gridOffset && col < gridOffset + boxw)
+                            && (row % gridyspc == 0 || col % gridxspc == 0)) {
                             Texture2DUtility.SetPixel(gridOverlay, col, row, gridColor);
                         }
+
+                        //Draw border grid (DISABLED)
+                        /*if ((row < gridOffset) || (row >= gridOffset + boxh) || (col < gridOffset || col >= gridOffset + boxw)) {
+                            Texture2DUtility.SetPixel(gridOverlay, col, row, Color.red);
+                        }*/
                     }
                 }
                 gridOverlay.Apply();
@@ -543,11 +560,28 @@ namespace Fizzik {
 
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(new GUIContent("Create New Sprite"), false, () => {
-                    
+                    //Display sprite creation options window
+                    CreateNewSpriteOptions options = ScriptableObject.CreateInstance<CreateNewSpriteOptions>();
+                    options.Init(this);
+                    menuwindows.Add(options);
+                    options.showOptions();
+
+                    //createNewSprite();
                 });
                 menu.AddItem(new GUIContent("Open Existing Sprite"), false, () => {
 
                 });
+
+                menu.AddSeparator("");
+
+                if (changesSaved) {
+                    menu.AddDisabledItem(new GUIContent("Save"));
+                }
+                else {
+                    menu.AddItem(new GUIContent("Save"), false, () => {
+                        performAssetSave();
+                    });
+                }
 
                 menu.AddSeparator("");
 
@@ -568,7 +602,8 @@ namespace Fizzik {
 
                 GenericMenu menu = new GenericMenu();
                 menu.AddItem(new GUIContent("Grid Options"), false, () => {
-                    GridOverlayOptions options = new GridOverlayOptions(this);
+                    GridOverlayOptions options = ScriptableObject.CreateInstance<GridOverlayOptions>();
+                    options.Init(this);
                     menuwindows.Add(options);
                     options.showOptions();
                 });
@@ -586,6 +621,52 @@ namespace Fizzik {
             btnWidthOffset += menuButtonStyle.fixedWidth;
 
             GUILayout.EndHorizontal();
+        }
+
+        public void createNewSprite(int w, int h) {
+            if (!haveWorkingSprite()) {
+                string dirpath = EditorPrefs.GetString(txt_LastUsedSaveDir_editorprefs_pathkey, txt_LastUsedSaveDir_editorprefs_pathdefault);
+
+                string path;
+                bool wasrelpath = false;
+                if (dirpath == txt_LastUsedSaveDir_editorprefs_pathdefault) {
+                    //Default to assets root directory
+                    path = EditorUtility.SaveFilePanelInProject(txt_CreateNewSprite_dialog_title,
+                        txt_CreateNewSprite_dialog_default,
+                        txt_CreateNewSprite_dialog_filetype, "");
+
+                    wasrelpath = true;
+                }
+                else {
+                    //Use user's last save directory
+                    path = EditorUtility.SaveFilePanel(txt_CreateNewSprite_dialog_title,
+                    dirpath,
+                    txt_CreateNewSprite_dialog_default, txt_CreateNewSprite_dialog_filetype);
+
+                    wasrelpath = false;
+                }
+
+                if (path != "") {
+                    string relpath = (wasrelpath) ? (path) : (FileUtil.GetProjectRelativePath(path));
+
+                    //Path was entered, store the used path and create the asset
+                    EditorPrefs.SetString(txt_LastUsedSaveDir_editorprefs_pathkey, Path.GetDirectoryName(path));
+
+                    FizzikSprite spr = ScriptableObject.CreateInstance<FizzikSprite>();
+
+                    AssetDatabase.CreateAsset(spr, relpath);
+
+                    spr.Init(w, h);
+
+                    workingSprite = spr;
+
+                    performAssetSave();
+                }
+            }
+        }
+
+        public bool haveWorkingSprite() {
+            return workingSprite != null;
         }
 
         public bool getGridOverlayEnabled() {
@@ -648,15 +729,15 @@ namespace Fizzik {
          ---------------------------*/
         const string txt_Title = "Sprite Editor";
 
-        const string txt_editorprefs_rectx = "spriteEditor_rectx";
-        const string txt_editorprefs_recty = "spriteEditor_recty";
-        const string txt_editorprefs_rectw = "spriteEditor_rectw";
-        const string txt_editorprefs_recth = "spriteEditor_recth";
+        const string txt_editorprefs_rectx = "Fizzik.spriteEditor_rectx";
+        const string txt_editorprefs_recty = "Fizzik.spriteEditor_recty";
+        const string txt_editorprefs_rectw = "Fizzik.spriteEditor_rectw";
+        const string txt_editorprefs_recth = "Fizzik.spriteEditor_recth";
 
-        const string txt_LastUsedSaveDir_editorprefs_pathkey = "lastUsedSaveDir";
+        const string txt_LastUsedSaveDir_editorprefs_pathkey = "Fizzik.lastUsedSaveDir";
         const string txt_LastUsedSaveDir_editorprefs_pathdefault = "Assets/";
 
-        const string txt_WorkingSprite_editorprefs_pathkey = "workingSpritePath";
+        const string txt_WorkingSprite_editorprefs_pathkey = "Fizzik.workingSpritePath";
         const string txt_WorkingSprite_editorprefs_pathnull = "";
 
         const string txt_CreateNewSprite_btn_title = "Create New FizzikSprite";
@@ -671,19 +752,19 @@ namespace Fizzik {
         const string txt_OpenExistingSprite_dialog_title = "Select FizzikSprite";
         const string txt_OpenExistingSprite_dialog_default = "MyNewFizzikSprite.asset";
 
-        const string txt_GridOverlay_editorprefs_pathkey = "gridOverlay";
+        const string txt_GridOverlay_editorprefs_pathkey = "Fizzik.gridOverlay";
         const bool bool_GridOverlay_editorprefs_default = false;
-        const string txt_GridOverlay_CellWidth_editorprefs_pathkey = "gridOverlayCellWidth";
+        const string txt_GridOverlay_CellWidth_editorprefs_pathkey = "Fizzik.gridOverlayCellWidth";
         const int int_GridOverlay_CellWidth_editorprefs_default = 16;
-        const string txt_GridOverlay_CellHeight_editorprefs_pathkey = "gridOverlayCellHeight";
+        const string txt_GridOverlay_CellHeight_editorprefs_pathkey = "Fizzik.gridOverlayCellHeight";
         const int int_GridOverlay_CellHeight_editorprefs_default = 16;
-        const string txt_GridOverlay_ColorR_editorprefs_pathkey = "gridOverlayColorR";
+        const string txt_GridOverlay_ColorR_editorprefs_pathkey = "Fizzik.gridOverlayColorR";
         const float float_GridOverlay_ColorR_editorprefs_default = 0f;
-        const string txt_GridOverlay_ColorG_editorprefs_pathkey = "gridOverlayColorG";
+        const string txt_GridOverlay_ColorG_editorprefs_pathkey = "Fizzik.gridOverlayColorG";
         const float float_GridOverlay_ColorG_editorprefs_default = 0f;
-        const string txt_GridOverlay_ColorB_editorprefs_pathkey = "gridOverlayColorB";
+        const string txt_GridOverlay_ColorB_editorprefs_pathkey = "Fizzik.gridOverlayColorB";
         const float float_GridOverlay_ColorB_editorprefs_default = 0f;
-        const string txt_GridOverlay_ColorA_editorprefs_pathkey = "gridOverlayColorA";
+        const string txt_GridOverlay_ColorA_editorprefs_pathkey = "Fizzik.gridOverlayColorA";
         const float float_GridOverlay_ColorA_editorprefs_default = .2f;
     }
 }

@@ -7,9 +7,12 @@ namespace Fizzik {
     public abstract class FizzikMenuOptionsWindow : EditorWindow {
         protected FizzikSpriteEditor editor;
         protected bool shouldClose;
+        protected bool hasInit = false;
 
-        public FizzikMenuOptionsWindow(FizzikSpriteEditor editor) {
+        public virtual void Init(FizzikSpriteEditor editor) {
             this.editor = editor;
+
+            hasInit = true;
         }
 
         void Update() {

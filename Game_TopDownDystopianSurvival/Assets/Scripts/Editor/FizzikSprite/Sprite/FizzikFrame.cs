@@ -8,15 +8,46 @@ namespace Fizzik {
      */
     [System.Serializable]
     public class FizzikFrame {
-        public FizzikSprite sprite; //Parent sprite
+        public int imgWidth;
+        public int imgHeight;
 
         public List<FizzikLayer> layers;
 
-        public FizzikFrame(FizzikSprite sprite) {
-            this.sprite = sprite;
+        public Texture2D texture;
+
+        public FizzikFrame(int w, int h) {
+            imgWidth = w;
+            imgHeight = h;
 
             layers = new List<FizzikLayer>();
-            layers.Add(new FizzikLayer(this)); //Add default first layer
+            layers.Add(new FizzikLayer(imgWidth, imgHeight)); //Add default first layer
+
+            texture = new Texture2D(imgWidth, imgHeight);
+            texture.filterMode = FilterMode.Point;
+
+            updateTexture();
+        }
+
+        /*
+         * Gets the finalized texture that contains all visible layers and combines them using
+         * their appropriate blend modes
+         *
+         * TODO - implement blend modes
+         */
+        public void updateTexture() {
+            bool firstVisibleLayer = true;
+            foreach (FizzikLayer layer in layers) {
+                if (layer.visible) {
+                    //TODO DEBUG - should take blendmodes into account, for now just 
+                    if (firstVisibleLayer) {
+                        texture.SetPixels(layer.pixels);
+                    }
+
+                    firstVisibleLayer = false;
+                }
+            }
+
+            texture.Apply();
         }
     }
 }

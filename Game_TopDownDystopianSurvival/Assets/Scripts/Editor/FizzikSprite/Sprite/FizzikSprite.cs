@@ -24,12 +24,19 @@ namespace Fizzik {
             imgHeight = h;
 
             frames = new List<FizzikFrame>();
-            frames.Add(new FizzikFrame(this)); //Add the default first frame
+            frames.Add(new FizzikFrame(imgWidth, imgHeight)); //Add the default first frame
 
             hasInit = true;
         }
 
-
+        public Texture2D getTextureFromFrame(int index) {
+            if (frames.Count > 0) {
+                return frames[Mathf.Clamp(index, 0, frames.Count - 1)].texture;
+            }
+            else {
+                return null;
+            }
+        }
 
 
 

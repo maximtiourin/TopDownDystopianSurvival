@@ -5,7 +5,9 @@ using UnityEditor;
 
 namespace Fizzik {
     public class GridOverlayOptions : FizzikMenuOptionsWindow {
-        public GridOverlayOptions(FizzikSpriteEditor editor) : base(editor) {
+        public override void Init(FizzikSpriteEditor editor) {
+            base.Init(editor);
+
             float w = dss_GridOverlayOptions_rect.size.x;
             float h = dss_GridOverlayOptions_rect.size.y;
             float hw = w / 2f;

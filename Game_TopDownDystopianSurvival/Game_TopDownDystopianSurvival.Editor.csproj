@@ -128,12 +128,14 @@
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Sprite\FizzikFrame.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Sprite\FizzikLayer.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Sprite\FizzikSprite.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\ColorUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\RectUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\ResizeEvent.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\Texture2DUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\Base\FizzikMenuOptionsWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\Base\FizzikSubWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\ColorPalette.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\CreateNewSpriteOptions.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\FizzikSpriteEditor.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\GridOverlayOptions.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\ToolPalette.cs" />
