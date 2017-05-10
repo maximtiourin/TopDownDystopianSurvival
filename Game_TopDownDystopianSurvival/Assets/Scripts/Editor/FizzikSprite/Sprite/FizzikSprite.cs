@@ -9,7 +9,7 @@ namespace Fizzik {
      * A FizzikSprite is a collection of FizzikFrames that is capable of running through and manipulating those frames
      * in a variety of ways.
      */
-    [CreateAssetMenu(fileName = "FizzikSprite", menuName = "Fizzik/Sprite", order = 1)]
+    //[CreateAssetMenu(fileName = "FizzikSprite", menuName = "Fizzik/Sprite", order = 1)] //Cant use this because we need to be able to init width and height
     [System.Serializable]
     public class FizzikSprite : ScriptableObject {
         public int imgWidth;
@@ -20,13 +20,15 @@ namespace Fizzik {
         public bool hasInit = false;
 
         public void Init(int w, int h) {
-            imgWidth = w;
-            imgHeight = h;
+            if (!hasInit) {
+                imgWidth = w;
+                imgHeight = h;
 
-            frames = new List<FizzikFrame>();
-            frames.Add(new FizzikFrame(imgWidth, imgHeight)); //Add the default first frame
+                frames = new List<FizzikFrame>();
+                frames.Add(new FizzikFrame(imgWidth, imgHeight)); //Add the default first frame
 
-            hasInit = true;
+                hasInit = true;
+            }
         }
 
         public Texture2D getTextureFromFrame(int index) {

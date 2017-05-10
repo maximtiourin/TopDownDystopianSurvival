@@ -83,6 +83,7 @@ namespace Fizzik {
 
             //Load Resources
             editor.tex_windowlogo = Resources.Load<Texture>(editor.rsc_windowlogo);
+            editor.tex_editorimagebg = Resources.Load<Texture>(editor.rsc_editorimagebg);
 
             string wpath = EditorPrefs.GetString(txt_WorkingSprite_editorprefs_pathkey, txt_WorkingSprite_editorprefs_pathnull);
 
@@ -472,7 +473,7 @@ namespace Fizzik {
             int boxmousex = (int) (mousex - boxRect.x - zo.x); //Makes sure to offset the zoomOrigin so that the box is always zerod at top left
             int boxmousey = (int) (mousey - boxRect.y - zo.y);
 
-            //Debug box
+            //Debug box --> Keep for reference
             /*GUI.Box(boxRect, 
                 "Event Mouse Pos: {" + mousex + c + mousey + "}" + n +
                 "Canvas Rect: {" + canvasZoomArea.x + c + canvasZoomArea.y + c + canvasZoomArea.size.x + c + canvasZoomArea.size.y + "}" + n +
@@ -480,6 +481,10 @@ namespace Fizzik {
                 "Debug Box Mouse Pos: {" + boxmousex + c + boxmousey + "}"
                 );*/
 
+            //Draw workingSprite Transparency Helper background image (use tex coords to tile the texture without scaling it more than its default size)
+            GUI.DrawTextureWithTexCoords(boxRect, tex_editorimagebg, new Rect(0f, 0f, tex_editorimagebg.width, tex_editorimagebg.height));
+
+            //Draw workingSprite image
             GUI.DrawTexture(boxRect, workingSprite.getTextureFromFrame(0));
 
             //Grid Overlay TODO DEBUG (Possibly Temp)
@@ -623,6 +628,10 @@ namespace Fizzik {
             GUILayout.EndHorizontal();
         }
 
+        /*
+         * Prompts the user for a save path, and then creates a new FizzikSprite with width, height at that path,
+         * while also setting it to the current working sprite
+         */
         public void createNewSprite(int w, int h) {
             if (!haveWorkingSprite()) {
                 string dirpath = EditorPrefs.GetString(txt_LastUsedSaveDir_editorprefs_pathkey, txt_LastUsedSaveDir_editorprefs_pathdefault);
@@ -722,7 +731,9 @@ namespace Fizzik {
          * Editor Textures
          ---------------------------*/
         Texture tex_windowlogo;
-        string rsc_windowlogo = "windowlogo";
+        string rsc_windowlogo = "fizzik_windowlogo";
+        Texture tex_editorimagebg;
+        string rsc_editorimagebg = "fizzik_editorimagebg";
 
         /*-------------------------- 
          * Text constants and Editorprefs

@@ -6,7 +6,7 @@ using System.Linq;
 namespace Fizzik {
     /*
      * A FizzikLayer stores pixel color information, as well as things such as blending modes and layer opacity,
-     * whether or not the layer is locked or visible, etc.
+     * whether or not the layer is locked or visible, as well as methods to aid in 'drawing' pixels inside the layer, etc.
      */
     [System.Serializable]
     public class FizzikLayer {
@@ -19,6 +19,7 @@ namespace Fizzik {
 
         public Color[] pixels; //2D array flattened to 1D (y * width + x)
         public BlendMode blendMode; //How the pixels of this layer should interact with layer pixels below this one
+        public float opacity;
         public bool visible;
         public bool locked;
 
@@ -29,6 +30,7 @@ namespace Fizzik {
             pixels = Enumerable.Repeat(Color.clear, imgWidth * imgHeight).ToArray();
 
             blendMode = BlendMode.NORMAL;
+            opacity = 1f;
             visible = true;
             locked = false;
         }

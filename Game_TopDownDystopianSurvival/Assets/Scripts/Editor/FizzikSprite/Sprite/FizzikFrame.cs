@@ -32,7 +32,7 @@ namespace Fizzik {
          * Gets the finalized texture that contains all visible layers and combines them using
          * their appropriate blend modes
          *
-         * TODO - implement blend modes
+         * TODO - implement blend modes (Look into efficient ways of blending arrays of pixels, so that im not looping over too many when setting texture)
          */
         public void updateTexture() {
             bool firstVisibleLayer = true;
@@ -40,10 +40,14 @@ namespace Fizzik {
                 if (layer.visible) {
                     //TODO DEBUG - should take blendmodes into account, for now just 
                     if (firstVisibleLayer) {
+                        //Set the base pixels
                         texture.SetPixels(layer.pixels);
-                    }
 
-                    firstVisibleLayer = false;
+                        firstVisibleLayer = false;
+                    }
+                    else {
+                        //Start blending pixels together
+                    }
                 }
             }
 
