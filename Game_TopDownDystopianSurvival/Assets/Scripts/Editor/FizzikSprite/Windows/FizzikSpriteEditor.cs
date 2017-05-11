@@ -414,6 +414,10 @@ namespace Fizzik {
             return (windowCoords - RectUtility.topLeft(canvasZoomArea)) / canvasZoom + canvasZoomOrigin;
         }
 
+        protected Vector2 getZoomCoordsToWindowCoords(Vector2 zoomCoords) {
+            return ((zoomCoords - canvasZoomOrigin) * canvasZoom) + RectUtility.topLeft(canvasZoomArea);
+        }
+
         protected Vector2 floorVec(Vector2 vec) {
             return new Vector2(Mathf.FloorToInt(vec.x), Mathf.FloorToInt(vec.y));
         }
@@ -457,8 +461,8 @@ namespace Fizzik {
             //Canvas content
             beginZoomArea(canvasZoom, canvasZoomArea);
 
-            int hw = Mathf.FloorToInt(canvasZoomArea.size.x / 2f);
-            int hh = Mathf.FloorToInt(canvasZoomArea.size.y / 2f);
+            float hw = canvasZoomArea.size.x / 2f;
+            float hh = canvasZoomArea.size.y / 2f;
             Vector2 zo = canvasZoomOrigin; //Zoom origin QoL helper
 
             string n = "\n";
@@ -467,8 +471,8 @@ namespace Fizzik {
             //Working Sprite Texture box
             int boxw = workingSprite.imgWidth;
             int boxh = workingSprite.imgHeight;
-            int hboxw = Mathf.FloorToInt(boxw / 2f);
-            int hboxh = Mathf.FloorToInt(boxh / 2f);
+            float hboxw = boxw / 2f;
+            float hboxh = boxh / 2f;
             Rect boxRect = new Rect(hw - hboxw - zo.x, hh - hboxh - zo.y, boxw, boxh);
             int boxmousex = (int) (mousex - boxRect.x - zo.x); //Makes sure to offset the zoomOrigin so that the box is always zerod at top left
             int boxmousey = (int) (mousey - boxRect.y - zo.y);
@@ -482,65 +486,97 @@ namespace Fizzik {
                 );*/
 
             //Draw workingSprite Transparency Helper background image (use tex coords to tile the texture without scaling it more than its default size)
-            GUI.DrawTextureWithTexCoords(boxRect, tex_editorimagebg, new Rect(0f, 0f, tex_editorimagebg.width, tex_editorimagebg.height));
+            float texcoordw = workingSprite.imgWidth / Mathf.Max(4f, workingSprite.imgWidth % tex_editorimagebg.width); //Makes nice tiling both for factor of 2, as well as non-factor
+            float texcoordh = workingSprite.imgHeight / Mathf.Max(4f, workingSprite.imgHeight % tex_editorimagebg.height);
+            GUI.DrawTextureWithTexCoords(boxRect, tex_editorimagebg, new Rect(0, 0, texcoordw, texcoordh));
 
             //Draw workingSprite image
             GUI.DrawTexture(boxRect, workingSprite.getTextureFromFrame(0));
 
-            //Grid Overlay TODO DEBUG (Possibly Temp)
+            endZoomArea();
+
+
+            /*
+             * BEGIN SINGLE-PIXEL OVERLAYS
+             *
+             * Maxim Tiourin
+             *
+             * Goal was to be able to draw single pixel overlays regardless of zoom level.
+             * Due to not really understanding how the GUI.matrix scaling was taken into effect, I resorted to
+             * Voodoo  magic to get the desired result by playing around with offset numbers until they worked.
+             */
+            float ctw = canvasZoomArea.size.x;
+            float cth = canvasZoomArea.size.y;
+            float hctw = ctw / 2f;
+            float hcth = cth / 2f;
+            float ho = dss_Toolbar_height; //Since were back out of the zoom area gui matrix, we need to offset the toolbar
+            float gw = boxRect.width;
+            float gh = boxRect.height;
+            Rect grect = new Rect(boxRect.x - (zo.x * canvasZoom), boxRect.y - (zo.y * canvasZoom), gw, gh);
+            Rect sgrect = RectUtility.scaleBy(grect, canvasZoom);
+            float sgw = sgrect.width;
+            float sgh = sgrect.height;
+            float hsgw = sgw / 2f;
+            float hsgh = sgh / 2f;
+            float voodoo_x_round = canvasZoom;
+            float voodoo_y_round = canvasZoom;
+            float voodoo_x = (sgrect.x + zo.x + (ctw * ((canvasZoom - 1f) / 2f)));
+            voodoo_x = Mathf.Round(voodoo_x / voodoo_x_round) * voodoo_x_round;
+            float voodoo_y = (sgrect.y + zo.y + (cth * ((canvasZoom - 1f) / 2f)));
+            voodoo_y = Mathf.Round(voodoo_y / voodoo_y_round) * voodoo_y_round;
+            sgrect = new Rect(voodoo_x, voodoo_y + ho, sgrect.width, sgrect.height); //Future reference - Key was to add the 'ho' offset AFTER all scaling, instead of before
+
+            //Draw Grid Overlay
             if (gridOverlayEnabled) {
-                const int gridOffset = 1;
-                Texture2D gridOverlay = new Texture2D(boxw + (2 * gridOffset), boxh + (2 * gridOffset));
-                gridOverlay.SetPixels(Enumerable.Repeat(Color.clear, (boxw + (2 * gridOffset)) * (boxh + (2 * gridOffset))).ToArray());
-                gridOverlay.filterMode = FilterMode.Point;
-                Rect gridRect = new Rect(boxRect.x - gridOffset, boxRect.y - gridOffset, boxw + (2 * gridOffset), boxh + (2 * gridOffset));
-                int gridxspc = gridOverlayCellWidth; //Grid line every n pixels
-                int gridyspc = gridOverlayCellHeight;
-                Color gridColor = gridOverlayColor;
-                for (int row = 0; row < boxh + (2 * gridOffset); row++) {
-                    for (int col = 0; col < boxw + (2 * gridOffset); col++) {
-                        //Draw internal grid
-                        if ((row >= gridOffset && row < gridOffset + boxh) && (col >= gridOffset && col < gridOffset + boxw)
-                            && (row % gridyspc == 0 || col % gridxspc == 0)) {
-                            Texture2DUtility.SetPixel(gridOverlay, col, row, gridColor);
-                        }
+                Texture2D gridCellTexture = new Texture2D(1, 1);
+                gridCellTexture.SetPixel(0, 0, gridOverlayColor);
+                gridCellTexture.filterMode = FilterMode.Point;
+                gridCellTexture.Apply();
 
-                        //Draw border grid (DISABLED)
-                        /*if ((row < gridOffset) || (row >= gridOffset + boxh) || (col < gridOffset || col >= gridOffset + boxw)) {
-                            Texture2DUtility.SetPixel(gridOverlay, col, row, Color.red);
-                        }*/
-                    }
+                float cellw = gridOverlayCellWidth * canvasZoom;
+                float cellh = gridOverlayCellHeight * canvasZoom;
+
+                //Draw rows
+                for (float row = sgrect.yMin; row < sgrect.yMax; row += cellh) {
+                    GUI.DrawTextureWithTexCoords(new Rect(sgrect.x, row, sgw, 1), gridCellTexture, new Rect(0, 0, 1, 1));
                 }
-                gridOverlay.Apply();
+                GUI.DrawTextureWithTexCoords(new Rect(sgrect.x, sgrect.yMax, sgw, 1), gridCellTexture, new Rect(0, 0, 1, 1)); //Draw closing line (in case height isn't factor of 2)
 
-                GUI.DrawTexture(gridRect, gridOverlay);
+                //Draw columns
+                for (float col = sgrect.xMin; col < sgrect.xMax; col += cellw) {
+                    GUI.DrawTextureWithTexCoords(new Rect(col, sgrect.y, 1, sgh), gridCellTexture, new Rect(0, 0, 1, 1));
+                }
+                GUI.DrawTextureWithTexCoords(new Rect(sgrect.xMax, sgrect.y, 1, sgh), gridCellTexture, new Rect(0, 0, 1, 1));
+
+                DestroyImmediate(gridCellTexture);
             }
 
-            //Pixel Hover Overlay TODO DEBUG (Possibly Temp)
-            Texture2D hoverOverlay = new Texture2D(boxw, boxh);
-            hoverOverlay.SetPixels(Enumerable.Repeat(Color.clear, boxw * boxh).ToArray());
-            hoverOverlay.filterMode = FilterMode.Point;
+            //Draw Pixel Hover Overlay ; TODO - Add color selection options, possibly expand to be different per tool type selected
+            Texture2D pixelHoverTexture = new Texture2D(1, 1);
+            pixelHoverTexture.SetPixel(0, 0, Color.red);
+            pixelHoverTexture.filterMode = FilterMode.Point;
+            pixelHoverTexture.Apply();
+
             if (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh) {
                 //Mouse is inside of image, display pixel overlay
-                int px = Mathf.FloorToInt(boxmousex);
-                int py = Mathf.FloorToInt(boxmousey); //Texture coords origin is bottom left, window coords origin is top left, so flip
+                float sideLength = canvasZoom;
 
-                Color ocolor = new Color(1f, 0f, 0f, .5f);
+                float px = Mathf.FloorToInt(boxmousex) * sideLength;
+                float py = Mathf.FloorToInt(boxmousey) * sideLength;
 
-                //TODO DEBUG hacky draw pixel outline
-                for (int row = py - 1; row < py - 1 + 3; row++) {
-                    for (int col = px - 1; col < px - 1 + 3; col++) {
-                        if (row >= 0 && row < boxh && col >= 0 && col < boxw && !(row == py && col == px) && !((int) Mathf.Abs(row - py) == (int) Mathf.Abs(col - px))) {
-                            Texture2DUtility.SetPixel(hoverOverlay, col, row, ocolor);
-                        }
-                    }
-                }
+                Rect prect = new Rect(sgrect.x + px, sgrect.y + py, sgrect.width, sgrect.height);
+
+                GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y, sideLength, 1), pixelHoverTexture, new Rect(0, 0, 1, 1));
+                GUI.DrawTextureWithTexCoords(new Rect(prect.x + sideLength, prect.y, 1, sideLength), pixelHoverTexture, new Rect(0, 0, 1, 1));
+                GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y + sideLength, sideLength, 1), pixelHoverTexture, new Rect(0, 0, 1, 1));
+                GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y, 1, sideLength), pixelHoverTexture, new Rect(0, 0, 1, 1));
             }
-            hoverOverlay.Apply();
 
-            GUI.DrawTexture(boxRect, hoverOverlay);
+            DestroyImmediate(pixelHoverTexture);
 
-            endZoomArea();
+            /*
+             * END SINGLE-PIXEL OVERLAYS
+             */
 
             editor.Repaint(); //Debug Repaint
         }

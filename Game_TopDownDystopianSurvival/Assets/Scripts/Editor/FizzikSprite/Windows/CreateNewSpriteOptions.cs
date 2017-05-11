@@ -26,8 +26,8 @@ namespace Fizzik {
 
             EditorGUILayout.BeginVertical();
 
-            pw = Mathf.Max(1, EditorGUILayout.DelayedIntField("Pixel Width", pw));
-            ph = Mathf.Max(1, EditorGUILayout.DelayedIntField("Pixel Height", ph));
+            pw = Mathf.Max(1, EditorGUILayout.IntField("Pixel Width", pw));
+            ph = Mathf.Max(1, EditorGUILayout.IntField("Pixel Height", ph));
 
             GUILayout.Space(32f);
 
