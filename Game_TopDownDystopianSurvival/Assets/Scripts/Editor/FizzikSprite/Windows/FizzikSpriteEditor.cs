@@ -21,6 +21,7 @@ namespace Fizzik {
         protected List<FizzikMenuOptionsWindow> menuwindows;
         protected ToolPalette toolPalette;
         protected ColorPalette colorPalette;
+        protected DeveloperWindow devWindow;
 
         protected FizzikSprite workingSprite; //The currently open fizziksprite
 
@@ -70,6 +71,10 @@ namespace Fizzik {
             editor.colorPalette.setWindowID(subwindowID++);
             editor.subwindows.Add(editor.colorPalette);
 
+            editor.devWindow = new DeveloperWindow(editor);
+            editor.devWindow.setWindowID(subwindowID++);
+            editor.subwindows.Add(editor.devWindow);
+
             //Set window constraints
             editor.minSize = new Vector2(editor.calculateMinWidth(), editor.calculateMinHeight());
             editor.previousEditorRect = editor.position;
@@ -82,8 +87,8 @@ namespace Fizzik {
             editor.resetCanvasZoomArea();
 
             //Load Resources
-            editor.tex_windowlogo = Resources.Load<Texture>(editor.rsc_windowlogo);
-            editor.tex_editorimagebg = Resources.Load<Texture>(editor.rsc_editorimagebg);
+            editor.tex_windowlogo = Resources.Load<Texture>(rsc_windowlogo);
+            editor.tex_editorimagebg = Resources.Load<Texture>(rsc_editorimagebg);
 
             string wpath = EditorPrefs.GetString(txt_WorkingSprite_editorprefs_pathkey, txt_WorkingSprite_editorprefs_pathnull);
 
@@ -104,6 +109,14 @@ namespace Fizzik {
             //Enforce init
             if (!hasInit) {
                 Init();
+            }
+
+            //Save Subwindow position relative to editor boundaries (to be later used in relative reposition on resize)
+            foreach (FizzikSubWindow sw in subwindows) {
+                Vector2 curpos = new Vector2(sw.getCurrentRect().x, sw.getCurrentRect().y);
+                Vector2 prevsize = new Vector2(previousEditorRect.size.x, previousEditorRect.size.y);
+                Vector2 relpos = new Vector2((prevsize.x - curpos.x), prevsize.y - curpos.y);
+                sw.setRelativeWindowPosition(relpos);
             }
 
             //Track editor resizing event
@@ -149,32 +162,6 @@ namespace Fizzik {
                         //TODO OPEN FIZZIKSPRITE
                     }
 
-                    /**-- <LAYOUT> -- **/
-                    EditorGUILayout.BeginHorizontal();
-
-                    /****************************************************************
-                     ******** - Create New Sprite
-                     ****************************************************************/
-                    //Create Sprite Button
-                    if (GUILayout.Button(new GUIContent(txt_CreateNewSprite_btn_title, txt_CreateNewSprite_btn_ttip))) {
-                        string path = EditorUtility.SaveFilePanel(txt_CreateNewSprite_dialog_title,
-                            EditorPrefs.GetString(txt_LastUsedSaveDir_editorprefs_pathkey, txt_LastUsedSaveDir_editorprefs_pathdefault),
-                            txt_CreateNewSprite_dialog_default, txt_CreateNewSprite_dialog_filetype);
-
-                        if (path != "") {
-                            string relpath = FileUtil.GetProjectRelativePath(path);
-
-                            //Path was entered, store the used path and create the asset
-                            EditorPrefs.SetString(txt_LastUsedSaveDir_editorprefs_pathkey, Path.GetDirectoryName(path));
-
-                            FizzikSprite spr = ScriptableObject.CreateInstance<FizzikSprite>();
-
-                            AssetDatabase.CreateAsset(spr, relpath);
-
-                            performAssetSave();
-                        }
-                    }
-
                     /****************************************************************
                      ******** Open Existing Sprite
                      ****************************************************************/
@@ -194,9 +181,6 @@ namespace Fizzik {
                     if (GUILayout.Button(new GUIContent(txt_OpenExistingSprite_btn_title, txt_OpenExistingSprite_btn_ttip))) {
                         EditorGUIUtility.ShowObjectPicker<FizzikSprite>(null, false, "", cid_OpenExistingSprite);
                     }
-
-                    /**-- </LAYOUT> -- **/
-                    EditorGUILayout.EndHorizontal();
                 }
             }
             else {
@@ -204,16 +188,16 @@ namespace Fizzik {
                  ******** Work on already opened WorkingSprite
                  ****************************************************************/
                 //Edit FizzikSprite
-
-                //TODO Subwindows should be displayed here eventually, but for now they are displayed outside of all conditional branches
             }
 
             //Subwindows
             if (haveWorkingSprite()) {
                 BeginWindows();
                 foreach (FizzikSubWindow sw in subwindows) {
-                    sw.clampInsideRect(new Rect(0f, dss_Toolbar_height, position.size.x, position.size.y - dss_Toolbar_height));
-                    sw.setCurrentRect(GUI.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
+                    if (sw.isEnabled()) {
+                        sw.clampInsideRect(new Rect(0f, dss_Toolbar_height, position.size.x, position.size.y - dss_Toolbar_height));
+                        sw.setCurrentRect(GUI.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
+                    }
                 }
                 EndWindows();
             }
@@ -262,6 +246,13 @@ namespace Fizzik {
             if (e.type == ResizeEvent.ResizeEventType.MoveAndResize || e.type == ResizeEvent.ResizeEventType.Resize) {
                 //Reset canvas zooming if window has been resized
                 resetCanvasZoomArea();
+
+                //Reset relative window positions for QoL anchoring
+                foreach (FizzikSubWindow sw in subwindows) {
+                    Vector2 relpos = sw.getRelativeWindowPosition();
+
+                    sw.setCurrentRect(new Rect(position.size.x - relpos.x, position.size.y - relpos.y, sw.getCurrentRect().size.x, sw.getCurrentRect().size.y));
+                }
             }
         }
 
@@ -657,7 +648,21 @@ namespace Fizzik {
             }
             btnWidthOffset += menuButtonStyle.fixedWidth;
             if (GUILayout.Button(new GUIContent("Window", ""), menuButtonStyle)) {
+                Rect btnRect = GUILayoutUtility.GetLastRect();
+                btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
 
+                GenericMenu menu = new GenericMenu();
+                menu.AddItem(new GUIContent("Color Palette"), colorPalette.isEnabled(), () => {
+                    colorPalette.toggleEnabled();
+                });
+                menu.AddItem(new GUIContent("Tool Palette"), toolPalette.isEnabled(), () => {
+                    toolPalette.toggleEnabled();
+                });
+                menu.AddItem(new GUIContent("Developer Window"), devWindow.isEnabled(), () => {
+                    devWindow.toggleEnabled();
+                });
+
+                menu.DropDown(btnRect);
             }
             btnWidthOffset += menuButtonStyle.fixedWidth;
 
@@ -767,9 +772,9 @@ namespace Fizzik {
          * Editor Textures
          ---------------------------*/
         Texture tex_windowlogo;
-        string rsc_windowlogo = "fizzik_windowlogo";
+        const string rsc_windowlogo = "fizzik_windowlogo";
         Texture tex_editorimagebg;
-        string rsc_editorimagebg = "fizzik_editorimagebg";
+        const string rsc_editorimagebg = "fizzik_editorimagebg";
 
         /*-------------------------- 
          * Text constants and Editorprefs

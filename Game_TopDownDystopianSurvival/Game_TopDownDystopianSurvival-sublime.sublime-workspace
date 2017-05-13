@@ -1,0 +1,729 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"BOTTOM",
+				"BOTTOM_RIGHT〔variable〕"
+			],
+			[
+				"manage",
+				"manageSpawnQueue_Sourcer"
+			],
+			[
+				"mem",
+				"memoryOpts"
+			],
+			[
+				"me",
+				"memoryOpts"
+			],
+			[
+				"wa",
+				"wanderAwayFromTarget"
+			],
+			[
+				"direct",
+				"directionToTarget〔variable〕"
+			],
+			[
+				"BOTT",
+				"BOTTOM_LEFT〔variable〕"
+			],
+			[
+				"refu",
+				"refuelables〔variable〕"
+			],
+			[
+				"wi",
+				"withdrawable"
+			],
+			[
+				"carr",
+				"carryAmount"
+			],
+			[
+				"withdr",
+				"withdrawables〔variable〕"
+			],
+			[
+				"FIND_E",
+				"FIND_DROPPED_ENERGY〔variable〕"
+			],
+			[
+				"ener",
+				"energyOnGround"
+			],
+			[
+				"source",
+				"sourcePoint"
+			],
+			[
+				"assi",
+				"assignedSource〔variable〕"
+			],
+			[
+				"assigne",
+				"assignedSource"
+			],
+			[
+				"get",
+				"getObjectById〔function〕"
+			],
+			[
+				"D",
+				"DISPATCH_SOURCER_TICKS"
+			],
+			[
+				"creeps",
+				"creepsByRole〔variable〕"
+			],
+			[
+				"LOOK_S",
+				"LOOK_STRUCTURES〔variable〕"
+			],
+			[
+				"bod",
+				"bodyConfig"
+			],
+			[
+				"creep",
+				"creepsByRole〔variable〕"
+			],
+			[
+				"primary",
+				"primarySpawn"
+			],
+			[
+				"controller",
+				"controllerLevel〔argument〕"
+			],
+			[
+				"BODY",
+				"BODYPART_COST〔variable〕"
+			],
+			[
+				"FIND_MY",
+				"FIND_MY_SPAWNS〔variable〕"
+			],
+			[
+				"survey",
+				"surveySourcePaths"
+			],
+			[
+				"G",
+				"GarbageCollector"
+			],
+			[
+				"FIND_HOST",
+				"FIND_HOSTILE_CREEPS〔variable〕"
+			],
+			[
+				"is",
+				"isCreepEnergyFull〔function〕"
+			],
+			[
+				"should",
+				"shouldSpawn〔variable〕"
+			],
+			[
+				"shou",
+				"shouldSpawn"
+			],
+			[
+				"energ",
+				"energyAvailable"
+			],
+			[
+				"upga",
+				"upgradersToSpawn〔variable〕"
+			],
+			[
+				"upgra",
+				"upgradersToSpawn〔variable〕"
+			],
+			[
+				"U",
+				"UpgraderMedium"
+			],
+			[
+				"RESE",
+				"RESERVERS_PER_FLAG〔variable〕"
+			],
+			[
+				"reser",
+				"reserverCount〔variable〕"
+			],
+			[
+				"ex",
+				"expiringReservers"
+			],
+			[
+				"ROLE",
+				"ROLE_RESERVER〔variable〕"
+			],
+			[
+				"FIND_SP",
+				"FIND_MY_SPAWNS〔variable〕"
+			],
+			[
+				"STRU",
+				"STRUCTURE_CONTAINER〔variable〕"
+			],
+			[
+				"HAR",
+				"HARVESTERS_PER_FLAG〔variable〕"
+			],
+			[
+				"Lon",
+				"LongRangeHarvestingFlag"
+			],
+			[
+				"sort",
+				"sortedContainers〔variable〕"
+			],
+			[
+				"FIND_HOS",
+				"FIND_HOSTILE_SPAWNS〔variable〕"
+			],
+			[
+				"struc",
+				"struct.structureType"
+			],
+			[
+				"close",
+				"closeEnemyStructures"
+			],
+			[
+				"find",
+				"findInRange"
+			],
+			[
+				"FIND_HO",
+				"FIND_HOSTILE_CREEPS〔variable〕"
+			],
+			[
+				"struct",
+				"structureType"
+			],
+			[
+				"R",
+				"RangedMassAttack〔namespace〕"
+			],
+			[
+				"ma",
+				"manageWar"
+			],
+			[
+				"enemy",
+				"enemyStructures〔variable〕"
+			],
+			[
+				"FIND_HOSTILE_",
+				"FIND_HOSTILE_STRUCTURES〔variable〕"
+			],
+			[
+				"addition",
+				"additionalFilter〔variable〕"
+			],
+			[
+				"sorted",
+				"sortedEnemies\t(?)"
+			],
+			[
+				"OWNE",
+				"OWNERSHIP_MINE〔variable〕"
+			],
+			[
+				"isVa",
+				"isValidExtensionPlacementAtPoint(room, point)"
+			],
+			[
+				"LOOK_C",
+				"LOOK_CONSTRUCTION_SITES〔variable〕"
+			],
+			[
+				"ROOM",
+				"ROOM_WIDTH\t(num)"
+			],
+			[
+				"MAX",
+				"MAX_DISTANCE_FROM_SPAWN"
+			],
+			[
+				"all",
+				"allStructuresOfTypeInRoom"
+			],
+			[
+				"count",
+				"countExtensionSitesAndStructures"
+			],
+			[
+				"RESOURCE",
+				"RESOURCE_ENERGY〔variable〕"
+			],
+			[
+				"sorte",
+				"sortedPriorityGroup\t(?)"
+			],
+			[
+				"O",
+				"OWNERSHIP_MINE〔variable〕"
+			],
+			[
+				"fil",
+				"filterStructureTypes(e)"
+			],
+			[
+				"filter",
+				"filterContainersWithEnoughEnergy〔function〕"
+			],
+			[
+				"filterStructure",
+				"filterStructureTypes"
+			],
+			[
+				"dis",
+				"distanceSquared"
+			],
+			[
+				"prio",
+				"priorityStructure\t(?)"
+			],
+			[
+				"pr",
+				"priorityGroup\t(?)"
+			],
+			[
+				"filterStructu",
+				"filterStructureTypes"
+			],
+			[
+				"OWN",
+				"OWNERSHIP_MINE\t(num)"
+			],
+			[
+				"str",
+				"strictOwnership\t(bool)"
+			],
+			[
+				"RESOUR",
+				"RESOURCE_ENERGY〔variable〕"
+			],
+			[
+				"RES",
+				"RESOURCE_ENERGY〔variable〕"
+			],
+			[
+				"OW",
+				"OWNERSHIP_MINE\t(num)"
+			],
+			[
+				"if",
+				"ifDefinedIsItTrue"
+			],
+			[
+				"sortedP",
+				"sortedPriorities\t(?)"
+			],
+			[
+				"isN",
+				"isEnergyFull(creep)"
+			],
+			[
+				"ERR_",
+				"ERR_NOT_ENOUGH_RESOURCES〔variable〕"
+			],
+			[
+				"closest",
+				"closestContainer\t(?)"
+			],
+			[
+				"desir",
+				"desirableContainers\t(?)"
+			],
+			[
+				"d",
+				"desirableContainers\t(?)"
+			],
+			[
+				"carry",
+				"carryCapacity"
+			],
+			[
+				"BUIL",
+				"BUILDERS_PER_ROOM\t(num)"
+			],
+			[
+				"ERR_NONT",
+				"ERR_NOT_IN_RANGE〔variable〕"
+			],
+			[
+				"sourceC",
+				"sourceContainerPoints\t(?)"
+			],
+			[
+				"sourceCon",
+				"sourceContainerPointsGenerated"
+			],
+			[
+				"STATE_S",
+				"STATE_SOURCE_CONTAINER_BUILT"
+			],
+			[
+				"STA",
+				"STATE_SOURCE_CONTAINER_PLAN〔variable〕"
+			],
+			[
+				"deter",
+				"determineSourceContainerState"
+			],
+			[
+				"STATE",
+				"STATE_SOURCE_CONTAINER_NONE〔variable〕"
+			],
+			[
+				"check",
+				"checkedOutSource〔variable〕"
+			],
+			[
+				"ignore",
+				"ignoreConstruction\t(?)"
+			],
+			[
+				"generateRoom",
+				"generateRoomSourceContainerPoints"
+			],
+			[
+				"COL",
+				"COLOR_SECONDARY\t(?)"
+			],
+			[
+				"DIST",
+				"DISTANCE_FROM_SOURCE"
+			],
+			[
+				"DIS",
+				"DISTANCE_FROM_SOURCE\t(num)"
+			],
+			[
+				"generate",
+				"generateRoomSourcePoints"
+			],
+			[
+				"sor",
+				"sortedPoints\t(?)"
+			],
+			[
+				"coll",
+				"collapsedPoints\t[]"
+			],
+			[
+				"col",
+				"collapsedPoints\t[]"
+			],
+			[
+				"sourc",
+				"sourcePoint\t(?)"
+			],
+			[
+				"harve",
+				"harvesterCount\t(?)"
+			],
+			[
+				"Har",
+				"HarvesterSmall"
+			],
+			[
+				"tic",
+				"tickCreeps"
+			],
+			[
+				"free",
+				"freeUnusedMemory()"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"last_filter": "Package Control: ",
+		"selected_items":
+		[
+			[
+				"Package Control: ",
+				"Package Control: Disable Package"
+			]
+		],
+		"width": 528.0
+	},
+	"console":
+	{
+		"height": 477.0,
+		"history":
+		[
+			"Install Package",
+			"import urllib.request,os,hashlib; h = 'df21e130d211cfc94d9b0905775a7c0f' + '1e3d39e33b79698005270310898eea76'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by) "
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/D/Users/Maxim/unity_workspace/VCS_Game_TopDownDystopianSurvival/Game_TopDownDystopianSurvival/Assets/Scripts/Editor",
+		"/D/Users/Maxim/unity_workspace/VCS_Game_TopDownDystopianSurvival/Game_TopDownDystopianSurvival/Assets/Scripts/Editor/FizzikSprite",
+		"/D/Users/Maxim/unity_workspace/VCS_Game_TopDownDystopianSurvival/Game_TopDownDystopianSurvival/Assets/Scripts/Editor/FizzikSprite/Windows"
+	],
+	"file_history":
+	[
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/OmniSharp/PrebuiltOmniSharpServer/config.json",
+		"/D/Users/Maxim/unity_workspace/VCS_Game_TopDownDystopianSurvival/Game_TopDownDystopianSurvival/Assets/Scripts/Editor/FizzikSprite/Windows/FizzikSpriteEditor.cs",
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/OmniSharp/messages.json",
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/OmniSharp/messages/1.5.0.txt",
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/OmniSharp/messages/1.8.2.txt",
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/OmniSharp/OmniSharpSublime.sublime-settings",
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/User/OmniSharpSublime.sublime-settings",
+		"/D/Users/Maxim/unity_workspace/VCS_Game_TopDownDystopianSurvival/Game_TopDownDystopianSurvival/Game_TopDownDystopianSurvival-sublime.sublime-project",
+		"/C/Users/Maxim/Documents/My Games/Path of Exile/MaximSink.filter",
+		"/C/Users/Maxim/Documents/My Games/Path of Exile/MaximSink-VeryStrict.filter",
+		"/D/Downloads/Utorrent/GrimDawn/Grim.Dawn.v1.0.0.9.Inclu.ALL.DLC.GOG/README.txt",
+		"/C/Users/Maxim/Documents/My Games/Path of Exile/NeverSink-Filter-4.63/NeverSink's filter - 4-VERY-STRICT.filter",
+		"/C/Users/Maxim/Documents/My Games/Path of Exile/NeverSink-Filter-4.63/README.txt",
+		"/D/Documents/wowhavenquitrant.txt",
+		"/D/Documents/swordname.txt",
+		"/D/Documents/rimworld_seeds.txt",
+		"/D/Documents/poe_stashtabs.txt",
+		"/D/Documents/0a_boardtotals_2017-03-14.txt",
+		"/C/Users/Maxim/Documents/PoE-TradeMacro/config_trade.ini",
+		"/C/Users/Maxim/Documents/PoE-TradeMacro/config.ini",
+		"/C/Users/Maxim/Documents/PoE-TradeMacro/MapModWarnings.txt",
+		"/C/Users/Maxim/Documents/PoE-TradeMacro/AdditionalMacros.txt",
+		"/C/Users/Maxim/Documents/My Games/Path of Exile/MaximSink-Strict.filter",
+		"/C/Users/Maxim/Documents/My Games/Path of Exile/NeverSink's filter - 1-REGULAR.filter",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/ai.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/fizlib.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/log.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/MEMORY.txt",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/role.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/role_sourcer.js",
+		"/D/Users/Maxim/unity_workspace/VCS_Dreadstone/Game_Dreadstone/Dreadstone/Assets/.gitignore",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/role_refueler.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/role_upgrader.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/prototype_creep_ai.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/prototype_roomposition.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/require.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/prototype_creep.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/prototype_room_spawn.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/prototype_structure.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/prototype_room.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/prototype_room_dispatch.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/prototype_room_survey.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/role_builder.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/config.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/main.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/127_0_0_1___21025/FizzikAI/garbage_collector.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/Angel/main.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/Angel/require.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/main.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/foreman.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.cleanser.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/factory.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.reserver.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.longrangeharvester.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.upgrader.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.refueler.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.harvester.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.builder.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/utility.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.reclaimer.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.hauler.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/TODO.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/garbagecollector.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/surveyor.js",
+		"/D/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.tower.js",
+		"/D/Program Files (x86)/Steam/steamapps/common/Screeps/server/example-mods/custom-objects/simple.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/utility.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/garbagecollector.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/foreman.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/tickcache.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/factory.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.harvester.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.upgrader.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.tower.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.builder.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/ai.refueler.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/surveyor.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/TODO.js",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/main.js",
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/TernJS/TernJS.sublime-settings",
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/User/SublimeCodeIntel.sublime-settings",
+		"/C/Users/Maxim/AppData/Roaming/Sublime Text 3/Packages/User/TernJS.sublime-settings",
+		"/C/Users/Maxim/AppData/Local/Screeps/scripts/screeps.com/FizzikMain/foreman"
+	],
+	"find":
+	{
+		"height": 34.0
+	},
+	"find_in_files":
+	{
+		"height": 90.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"Alteration Orb",
+			"Alteration",
+			"Hide",
+			"1200",
+			"1600",
+			"0700",
+			"0900",
+			"300",
+			"# DROPSOUND:",
+			"'# DROPSOUND'",
+			"\"# DROPSOUND\"",
+			"PlayAlertSound [0-9] [0-9]*",
+			"300",
+			"containers",
+			"5",
+			".Sort.d",
+			".Sort.",
+			"Sort"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"Show",
+			"50"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": true,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 23.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 100.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.variable_get":
+	{
+		"height": 439.0
+	},
+	"pinned_build_system": "",
+	"project": "Game_TopDownDystopianSurvival-sublime.sublime-project",
+	"replace":
+	{
+		"height": 62.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 392.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

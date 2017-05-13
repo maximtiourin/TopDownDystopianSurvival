@@ -8,8 +8,10 @@ namespace Fizzik {
         public static string defaultTitle = "Color Palette";
 
         private FizzikSpriteEditor editor;
+        private Vector2 relativePos = Vector2.zero;
         private Rect currentRect;
         private int windowID;
+        private bool enabled = true;
 
         public ColorPalette(FizzikSpriteEditor editor) {
             this.editor = editor;
@@ -84,6 +86,7 @@ namespace Fizzik {
                 EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_ColorPalette_rect.size.x),
                 EditorPrefs.GetFloat(txt_editorprefs_recth, dss_ColorPalette_rect.size.y)
             );
+            enabled = EditorPrefs.GetBool(txt_editorprefs_enabled, enabled);
         }
 
         public void saveUserSettings() {
@@ -91,6 +94,23 @@ namespace Fizzik {
             EditorPrefs.SetFloat(txt_editorprefs_recty, currentRect.y);
             EditorPrefs.SetFloat(txt_editorprefs_rectw, currentRect.size.x);
             EditorPrefs.SetFloat(txt_editorprefs_recth, currentRect.size.y);
+            EditorPrefs.SetBool(txt_editorprefs_enabled, enabled);
+        }
+
+        public void toggleEnabled() {
+            enabled = !enabled;
+        }
+
+        public bool isEnabled() {
+            return enabled;
+        }
+
+        public Vector2 getRelativeWindowPosition() {
+            return relativePos;
+        }
+
+        public void setRelativeWindowPosition(Vector2 relpos) {
+            relativePos = relpos;
         }
 
         /*-------------------------- 
@@ -105,5 +125,6 @@ namespace Fizzik {
         const string txt_editorprefs_recty = "Fizzik.colorPalette_recty";
         const string txt_editorprefs_rectw = "Fizzik.colorPalette_rectw";
         const string txt_editorprefs_recth = "Fizzik.colorPalette_recth";
+        const string txt_editorprefs_enabled = "Fizzik.colorPalette_enabled";
     }
 }

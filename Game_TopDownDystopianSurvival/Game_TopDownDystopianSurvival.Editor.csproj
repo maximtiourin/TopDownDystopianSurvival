@@ -136,6 +136,7 @@
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\Base\FizzikSubWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\ColorPalette.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\CreateNewSpriteOptions.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\DeveloperWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\FizzikSpriteEditor.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\GridOverlayOptions.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\ToolPalette.cs" />
