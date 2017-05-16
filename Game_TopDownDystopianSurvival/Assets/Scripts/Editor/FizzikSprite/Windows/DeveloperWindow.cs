@@ -14,7 +14,7 @@ namespace Fizzik {
         private bool enabled = false;
         
         private Vector2 scrollPosition;
-        private string output = "dlshfkjsdhfkjsdhf\naskjdhaskjdhas\najskdhajkshdkjashdkjas\njkahsdkjahsd\nasdjhaskdjhasddlshfkjsdhfkjsdhf\naskjdhaskjdhas\najskdhajkshdkjashdkjas\njkahsdkjahsd\nasdjhaskdjhasddlshfkjsdhfkjsdhf\naskjdhaskjdhas\najskdhajkshdkjashdkjas\njkahsdkjahsd\nasdjhaskdjhasddlshfkjsdhfkjsdhf\naskjdhaskjdhas\najskdhajkshdkjashdkjas\njkahsdkjahsd\nasdjhaskdjhasddlshfkjsdhfkjsdhf\naskjdhaskjdhas\najskdhajkshdkjashdkjas\njkahsdkjahsd\nasdjhaskdjhasddlshfkjsdhfkjsdhf\naskjdhaskjdhas\najskdhajkshdkjashdkjas\njkahsdkjahsd\nasdjhaskdjhasd";
+        private string output = "";
 
         public DeveloperWindow(FizzikSpriteEditor editor) {
             this.editor = editor;
@@ -61,15 +61,17 @@ namespace Fizzik {
         /*
          * Input = "val1", "val2", "val3"
          * OutputString += "val1, val2, val3"
+         *
+         * Accepts any value type, but will attempt to convert it to a string calling its toString() method
          */
-        public void appendCSV(params string[] vals) {
+        public void appendCSV(params object[] vals) {
             string str = "";
             for (int i = 0; i < vals.Length; i++) {
                 if (i < vals.Length - 1) {
-                    str += vals[i] + ", ";
+                    str += vals[i].ToString() + ", ";
                 }
                 else {
-                    str += vals[i];
+                    str += vals[i].ToString();
                 }
             }
             output += str;

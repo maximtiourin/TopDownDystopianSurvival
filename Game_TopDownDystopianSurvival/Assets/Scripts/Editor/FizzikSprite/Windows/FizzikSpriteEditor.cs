@@ -37,11 +37,14 @@ namespace Fizzik {
         protected int gridOverlayCellWidth;
         protected int gridOverlayCellHeight;
         protected Color gridOverlayColor;
+        protected bool canvasDragAlreadyStarted = false; //Allows drags to continue when hovering over subwindows, if those drags started outside of the subwindow
 
         //Main editor variables
+        const bool DEVELOPER = true; //Used to flag debugging via the developer window
         protected Rect previousEditorRect; //Rect used to keep track of any window resizing changes as a result of not having built-in OnResize events in unity
         protected bool changesSaved = true; //Flag used in the determining of the current save state of the workingSprite
         protected bool mouseInsideEditor = false; //Flag used to keep track of the mouse being inside/outside the editor
+        protected FizzikSubWindow subwindowUnderMouse;
 
         protected bool hasInit = false;
 
@@ -71,9 +74,11 @@ namespace Fizzik {
             editor.colorPalette.setWindowID(subwindowID++);
             editor.subwindows.Add(editor.colorPalette);
 
-            editor.devWindow = new DeveloperWindow(editor);
-            editor.devWindow.setWindowID(subwindowID++);
-            editor.subwindows.Add(editor.devWindow);
+            if (DEVELOPER) {
+                editor.devWindow = new DeveloperWindow(editor);
+                editor.devWindow.setWindowID(subwindowID++);
+                editor.subwindows.Add(editor.devWindow);
+            }
 
             //Set window constraints
             editor.minSize = new Vector2(editor.calculateMinWidth(), editor.calculateMinHeight());
@@ -111,21 +116,48 @@ namespace Fizzik {
                 Init();
             }
 
+            //Developer Window DEBUG
+            if (DEVELOPER && devWindow.isEnabled()) {
+                devWindow.clear();
+            }
+
+            //Current event QoL helper
+            Event e = Event.current;
+
             //Save Subwindow position relative to editor boundaries (to be later used in relative reposition on resize)
+            //Also use this loop to keep track of the currently hovered over subwindow (so that events down the line can react accordingly)
+            //The way that sw's are looped through and drawn, due to 'bringwindowtofront' inside of the loop, the subwindowUnderMouse will always be the window at the forefront.
+            subwindowUnderMouse = null;
             foreach (FizzikSubWindow sw in subwindows) {
+                //Layer windows in order of their creation always, to aid in tracking the correct forefront window under mouse
+                GUI.BringWindowToFront(sw.getWindowID());
+
+                //Relative positioning
                 Vector2 curpos = new Vector2(sw.getCurrentRect().x, sw.getCurrentRect().y);
                 Vector2 prevsize = new Vector2(previousEditorRect.size.x, previousEditorRect.size.y);
                 Vector2 relpos = new Vector2((prevsize.x - curpos.x), prevsize.y - curpos.y);
                 sw.setRelativeWindowPosition(relpos);
+
+                //Track window under mouse
+                if (sw.isEnabled() && sw.getCurrentRect().Contains(e.mousePosition)) {
+                    subwindowUnderMouse = sw;
+                }
+            }
+
+            //Developer Window DEBUG
+            if (DEVELOPER && devWindow.isEnabled()) {
+                if (subwindowUnderMouse != null) {
+                    devWindow.appendLine("Subwindow under mouse: " + subwindowUnderMouse.getTitle() + " (" + subwindowUnderMouse.getWindowID() + ")");
+                }
+                else {
+                    devWindow.appendLine("Subwindow under mouse: <none>");
+                }
             }
 
             //Track editor resizing event
             if (!position.Equals(previousEditorRect)) {
                 OnResize(new ResizeEvent(previousEditorRect, position));
             }
-
-            //Current event QoL helper
-            Event e = Event.current;
 
             //TODO MOUSE ENTER/LEAVE
             if (e.type == EventType.MouseEnterWindow) {
@@ -418,7 +450,7 @@ namespace Fizzik {
          */
         protected void handleCanvas(Event e) {
             //Handle zooming from mousewheel scrolling event
-            if (e.type == EventType.ScrollWheel) {
+            if ((subwindowUnderMouse == null) && e.type == EventType.ScrollWheel) {
                 Vector2 mousePos = e.mousePosition;
                 Vector2 delta = e.delta;
                 Vector2 zoomMousePos = getWindowCoordsToZoomCoords(mousePos);
@@ -433,74 +465,59 @@ namespace Fizzik {
             }
             
             //Handle panning from mousewheel dragging event
-            if (e.type == EventType.MouseDrag && e.button == 2) {
-                const float zoomCurve = .12f;
+            if ((subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == 2) {
+                //const float zoomCurve = .12f;
 
                 Vector2 delta = -e.delta;
-                delta /= canvasZoom;
-                canvasZoomOrigin += delta * canvasZoom * Mathf.Lerp(1f, zoomCurve, (canvasZoom - minCanvasZoom) / (maxCanvasZoom - minCanvasZoom));
+                canvasZoomOrigin += (delta / canvasZoom);
+                //delta /= canvasZoom;
+                //canvasZoomOrigin += delta * canvasZoom * Mathf.Lerp(1f, zoomCurve, (canvasZoom - minCanvasZoom) / (maxCanvasZoom - minCanvasZoom));
                 //canvasZoomOrigin = floorVec(canvasZoomOrigin);
+
+                canvasDragAlreadyStarted = true;
 
                 e.Use();
             }
+            //Mouse drag was released, reset drag flag
+            if (canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == 2) {
+                canvasDragAlreadyStarted = false;
+            }
 
-            //Debug TODO track mouse pos
+            /*
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             * Initialize all helper variables (must be done all at once in this unseemingly chunk to allow for easier debugging
+             * -----------------------------------------------------------------------------------------------------------------
+             * Goal was to be able to draw single pixel overlays regardless of zoom level.
+             * Due to not really understanding how the GUI.matrix scaling was taken into effect, I resorted to
+             * Voodoo  magic to get the desired result by playing around with offset numbers until they worked.
+             * -----------------------------------------------------------------------------------------------------------------
+             */
+            
+            //Various mouse coordinates
+            float mousex = e.mousePosition.x;
+            float mousey = e.mousePosition.y;
+
             Vector2 canvasMousePos = getWindowCoordsToZoomCoords(e.mousePosition);
-            float mousex = canvasMousePos.x;
-            float mousey = canvasMousePos.y;
+            float canvasmousex = canvasMousePos.x;
+            float canvasmousey = canvasMousePos.y;
 
-            //Canvas content
-            beginZoomArea(canvasZoom, canvasZoomArea);
-
-            float hw = canvasZoomArea.size.x / 2f;
-            float hh = canvasZoomArea.size.y / 2f;
+            //Canvas size helpers
+            float ctw = canvasZoomArea.size.x;
+            float cth = canvasZoomArea.size.y;
+            float hctw = ctw / 2f;
+            float hcth = cth / 2f;
             Vector2 zo = canvasZoomOrigin; //Zoom origin QoL helper
-
-            string n = "\n";
-            string c = ", ";
 
             //Working Sprite Texture box
             int boxw = workingSprite.imgWidth;
             int boxh = workingSprite.imgHeight;
             float hboxw = boxw / 2f;
             float hboxh = boxh / 2f;
-            Rect boxRect = new Rect(hw - hboxw - zo.x, hh - hboxh - zo.y, boxw, boxh);
-            int boxmousex = (int) (mousex - boxRect.x - zo.x); //Makes sure to offset the zoomOrigin so that the box is always zerod at top left
-            int boxmousey = (int) (mousey - boxRect.y - zo.y);
+            Rect boxRect = new Rect(hctw - hboxw - zo.x, hcth - hboxh - zo.y, boxw, boxh); //These values mae sense only inside of the zoom GUI.matrix farther below
 
-            //Debug box --> Keep for reference
-            /*GUI.Box(boxRect, 
-                "Event Mouse Pos: {" + mousex + c + mousey + "}" + n +
-                "Canvas Rect: {" + canvasZoomArea.x + c + canvasZoomArea.y + c + canvasZoomArea.size.x + c + canvasZoomArea.size.y + "}" + n +
-                "Zoom Origin: {" + canvasZoomOrigin.x + c + canvasZoomOrigin.y + "}" + n +
-                "Debug Box Mouse Pos: {" + boxmousex + c + boxmousey + "}"
-                );*/
-
-            //Draw workingSprite Transparency Helper background image (use tex coords to tile the texture without scaling it more than its default size)
-            float texcoordw = workingSprite.imgWidth / Mathf.Max(4f, workingSprite.imgWidth % tex_editorimagebg.width); //Makes nice tiling both for factor of 2, as well as non-factor
-            float texcoordh = workingSprite.imgHeight / Mathf.Max(4f, workingSprite.imgHeight % tex_editorimagebg.height);
-            GUI.DrawTextureWithTexCoords(boxRect, tex_editorimagebg, new Rect(0, 0, texcoordw, texcoordh));
-
-            //Draw workingSprite image
-            GUI.DrawTexture(boxRect, workingSprite.getTextureFromFrame(0));
-
-            endZoomArea();
-
-
-            /*
-             * BEGIN SINGLE-PIXEL OVERLAYS
-             *
-             * Maxim Tiourin
-             *
-             * Goal was to be able to draw single pixel overlays regardless of zoom level.
-             * Due to not really understanding how the GUI.matrix scaling was taken into effect, I resorted to
-             * Voodoo  magic to get the desired result by playing around with offset numbers until they worked.
-             */
-            float ctw = canvasZoomArea.size.x;
-            float cth = canvasZoomArea.size.y;
-            float hctw = ctw / 2f;
-            float hcth = cth / 2f;
-            float ho = dss_Toolbar_height; //Since were back out of the zoom area gui matrix, we need to offset the toolbar
+            //Voodoo magic starts here
+            float ho = dss_Toolbar_height; //Toolbar offset
             float gw = boxRect.width;
             float gh = boxRect.height;
             Rect grect = new Rect(boxRect.x - (zo.x * canvasZoom), boxRect.y - (zo.y * canvasZoom), gw, gh);
@@ -516,6 +533,63 @@ namespace Fizzik {
             float voodoo_y = (sgrect.y + zo.y + (cth * ((canvasZoom - 1f) / 2f)));
             voodoo_y = Mathf.Round(voodoo_y / voodoo_y_round) * voodoo_y_round;
             sgrect = new Rect(voodoo_x, voodoo_y + ho, sgrect.width, sgrect.height); //Future reference - Key was to add the 'ho' offset AFTER all scaling, instead of before
+
+            //Working Sprite Texture mouse coordinates
+            float boxmousexraw = (mousex - sgrect.x) / canvasZoom;
+            float boxmouseyraw = (mousey - sgrect.y) / canvasZoom;
+            int boxmousex = Mathf.FloorToInt(boxmousexraw);
+            int boxmousey = Mathf.FloorToInt(boxmouseyraw);
+
+            /*
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             */
+
+            //Developer Window DEBUG
+            if (DEVELOPER && devWindow.isEnabled()) {
+                devWindow.append("Event Mouse Pos: {");
+                devWindow.appendCSV(mousex, mousey);
+                devWindow.appendLine("}");
+
+                devWindow.append("Canvas Event Mouse Pos: {");
+                devWindow.appendCSV(canvasmousex, canvasmousey);
+                devWindow.appendLine("}");
+
+                devWindow.append("Canvas Image Box Rect: {");
+                devWindow.appendCSV(boxRect.x, boxRect.y, boxRect.size.x, boxRect.size.y);
+                devWindow.appendLine("}");
+
+                devWindow.append("Canvas Image Mouse Pos (*): {");
+                devWindow.appendCSV(boxmousexraw, boxmouseyraw);
+                devWindow.appendLine("}");
+
+                devWindow.append("Canvas Image Mouse Coord (*): {");
+                devWindow.appendCSV(boxmousex, boxmousey);
+                devWindow.appendLine("}");
+
+                devWindow.append("Pixel Overlay Box Rect: {");
+                devWindow.appendCSV(sgrect.x, sgrect.y, sgrect.size.x, sgrect.size.y);
+                devWindow.appendLine("}");
+            }
+
+            //Canvas content
+            beginZoomArea(canvasZoom, canvasZoomArea);
+
+            //Draw workingSprite Transparency Helper background image (use tex coords to tile the texture without scaling it more than its default size)
+            float texcoordw = workingSprite.imgWidth / Mathf.Max(4f, workingSprite.imgWidth % tex_editorimagebg.width); //Makes nice tiling both for factor of 2, as well as non-factor
+            float texcoordh = workingSprite.imgHeight / Mathf.Max(4f, workingSprite.imgHeight % tex_editorimagebg.height);
+            GUI.DrawTextureWithTexCoords(boxRect, tex_editorimagebg, new Rect(0, 0, texcoordw, texcoordh));
+
+            //Draw workingSprite image
+            GUI.DrawTexture(boxRect, workingSprite.getTextureFromFrame(0));
+
+            endZoomArea();
+
+            /*
+             * BEGIN SINGLE-PIXEL OVERLAYS
+             */
 
             //Draw Grid Overlay
             if (gridOverlayEnabled) {
@@ -552,8 +626,8 @@ namespace Fizzik {
                 //Mouse is inside of image, display pixel overlay
                 float sideLength = canvasZoom;
 
-                float px = Mathf.FloorToInt(boxmousex) * sideLength;
-                float py = Mathf.FloorToInt(boxmousey) * sideLength;
+                float px = boxmousex * sideLength;
+                float py = boxmousey * sideLength;
 
                 Rect prect = new Rect(sgrect.x + px, sgrect.y + py, sgrect.width, sgrect.height);
 
@@ -658,9 +732,11 @@ namespace Fizzik {
                 menu.AddItem(new GUIContent("Tool Palette"), toolPalette.isEnabled(), () => {
                     toolPalette.toggleEnabled();
                 });
-                menu.AddItem(new GUIContent("Developer Window"), devWindow.isEnabled(), () => {
-                    devWindow.toggleEnabled();
-                });
+                if (DEVELOPER) {
+                    menu.AddItem(new GUIContent("Developer"), devWindow.isEnabled(), () => {
+                        devWindow.toggleEnabled();
+                    });
+                }
 
                 menu.DropDown(btnRect);
             }
