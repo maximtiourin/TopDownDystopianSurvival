@@ -31,7 +31,7 @@ namespace Fizzik {
          * their appropriate blend modes
          */
         public void updateTexture() {
-            List<FizzikLayer> visibleLayers = layers.FindAll((layer) => { return layer.visible = true; });
+            List<FizzikLayer> visibleLayers = layers.FindAll((layer) => { return layer.visible; });
 
             //Wipe texture
             Object.DestroyImmediate(texture);
