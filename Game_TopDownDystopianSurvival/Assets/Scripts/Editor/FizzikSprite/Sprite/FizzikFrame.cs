@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Fizzik {
@@ -22,36 +23,36 @@ namespace Fizzik {
             layers = new List<FizzikLayer>();
             layers.Add(new FizzikLayer(imgWidth, imgHeight)); //Add default first layer
 
-            texture = new Texture2D(imgWidth, imgHeight);
-            texture.filterMode = FilterMode.Point;
-
-            updateTexture();
+            updateTexture(); //Texture is initialized in here
         }
 
         /*
          * Gets the finalized texture that contains all visible layers and combines them using
          * their appropriate blend modes
-         *
-         * TODO - implement blend modes (Look into efficient ways of blending arrays of pixels, so that im not looping over too many when setting texture)
          */
         public void updateTexture() {
-            bool firstVisibleLayer = true;
-            foreach (FizzikLayer layer in layers) {
-                if (layer.visible) {
-                    //TODO DEBUG - should take blendmodes into account, for now just 
-                    if (firstVisibleLayer) {
-                        //Set the base pixels
-                        texture.SetPixels(layer.pixels);
+            List<FizzikLayer> visibleLayers = layers.FindAll((layer) => { return layer.visible = true; });
 
-                        firstVisibleLayer = false;
+            //Wipe texture
+            Object.DestroyImmediate(texture);
+            texture = null;
+
+            if (visibleLayers.Count > 0) {
+                foreach (FizzikLayer layer in visibleLayers) {
+                    if (texture == null) {
+                        texture = FizzikLayer.blend(layer.texture, layer.opacity, layer.texture, layer.opacity, layer.blendMode);
                     }
                     else {
-                        //Start blending pixels together
+                        texture = FizzikLayer.blend(texture, 1f, layer.texture, layer.opacity, layer.blendMode);
                     }
                 }
             }
-
-            texture.Apply();
+            else {
+                texture = new Texture2D(imgWidth, imgHeight);
+                texture.SetPixels(Enumerable.Repeat(Color.clear, imgWidth * imgHeight).ToArray());
+                texture.filterMode = FilterMode.Point;
+                texture.Apply();
+            }
         }
     }
 }
