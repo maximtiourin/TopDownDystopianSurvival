@@ -31,9 +31,29 @@ namespace Fizzik {
             }
         }
 
-        public Texture2D getTextureFromFrame(int index) {
+        /*
+         * Called when the sprite has been loaded from assetpath, and needs to have its textures remade.
+         */
+        public void reconstructTextures() {
+            foreach (FizzikFrame frame in frames) {
+                frame.reconstructTextures();
+            }
+        }
+
+        public FizzikFrame getFrame(int index) {
             if (frames.Count > 0) {
-                return frames[Mathf.Clamp(index, 0, frames.Count - 1)].texture;
+                return frames[Mathf.Clamp(index, 0, frames.Count - 1)];
+            }
+            else {
+                return null;
+            }
+        }
+
+        public Texture2D getTextureFromFrame(int index) {
+            FizzikFrame frame = getFrame(index);
+
+            if (frame != null) {
+                return frame.texture;
             }
             else {
                 return null;
@@ -48,7 +68,7 @@ namespace Fizzik {
             Object obj = EditorUtility.InstanceIDToObject(instanceID);
 
             if (obj is FizzikSprite) {
-                return FizzikSpriteEditor.openAssetFromProjectBrowser(EditorUtility.InstanceIDToObject(instanceID));
+                return FizzikSpriteEditor.openAssetFromProjectBrowser(obj);
             }
 
             return false;

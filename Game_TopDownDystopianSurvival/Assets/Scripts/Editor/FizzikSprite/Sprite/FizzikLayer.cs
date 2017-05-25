@@ -36,9 +36,17 @@ namespace Fizzik {
             visible = true;
             locked = false;
 
+            reconstructTexture();
+        }
+
+        /*
+         * Called when the texture needs to be completely remade from pixel array data
+         */
+        public void reconstructTexture() {
             texture = new Texture2D(imgWidth, imgHeight);
-            texture.SetPixels(pixels);
             texture.filterMode = FilterMode.Point;
+
+            updateTexture();
         }
 
         /*

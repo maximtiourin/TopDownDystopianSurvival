@@ -27,6 +27,17 @@ namespace Fizzik {
         }
 
         /*
+         * Called by fizziksprite when the sprite has been loaded from assetpath, and needs to have its textures remade.
+         */
+        public void reconstructTextures() {
+            foreach (FizzikLayer layer in layers) {
+                layer.reconstructTexture();
+            }
+
+            updateTexture();
+        }
+
+        /*
          * Gets the finalized texture that contains all visible layers and combines them using
          * their appropriate blend modes
          */
@@ -34,7 +45,7 @@ namespace Fizzik {
             List<FizzikLayer> visibleLayers = layers.FindAll((layer) => { return layer.visible; });
 
             //Wipe texture
-            Object.DestroyImmediate(texture);
+            if (texture != null) Object.DestroyImmediate(texture);
             texture = null;
 
             if (visibleLayers.Count > 0) {
@@ -52,6 +63,15 @@ namespace Fizzik {
                 texture.SetPixels(Enumerable.Repeat(Color.clear, imgWidth * imgHeight).ToArray());
                 texture.filterMode = FilterMode.Point;
                 texture.Apply();
+            }
+        }
+
+        public FizzikLayer getLayer(int index) {
+            if (layers.Count > 0) {
+                return layers[Mathf.Clamp(index, 0, layers.Count - 1)];
+            }
+            else {
+                return null;
             }
         }
     }

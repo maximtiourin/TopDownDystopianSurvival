@@ -37,13 +37,17 @@ namespace Fizzik {
         protected int gridOverlayCellWidth;
         protected int gridOverlayCellHeight;
         protected Color gridOverlayColor;
+        protected int dragContext = -1; //The id of the mouse button that is consequently used as a unique id for drag events, so that once a drag starts, it completes with same mouse button
         protected bool canvasDragAlreadyStarted = false; //Allows drags to continue when hovering over subwindows, if those drags started outside of the subwindow
+        protected Vector2 lastToolDragCoordinate = new Vector2(-9999f, -9999f); //The last coordinate of the mouse that is tracked during a drag in relation to tool events
 
         //Main editor variables
         const bool DEVELOPER = true; //Used to flag debugging via the developer window
         protected Rect previousEditorRect; //Rect used to keep track of any window resizing changes as a result of not having built-in OnResize events in unity
         protected bool changesSaved = true; //Flag used in the determining of the current save state of the workingSprite
         protected bool mouseInsideEditor = false; //Flag used to keep track of the mouse being inside/outside the editor
+        protected bool shouldDisplayObjectPicker = false; //Flag used to spawn an object picker object inside of the main OnGUI() method, doing so outside of it won't fire events
+        protected int displayedObjectPickerId = 0; //The id to assign to the next object picker that should be displayed;
         protected FizzikSubWindow subwindowUnderMouse;
 
         protected bool hasInit = false;
@@ -167,6 +171,27 @@ namespace Fizzik {
                 mouseInsideEditor = false;
             }
 
+            //Handle object picker selection (has to be done this way because object pickers created outside of OnGUI (even by nested methods) do not send events properly)
+            if (shouldDisplayObjectPicker) {
+                if (displayedObjectPickerId == cid_OpenExistingSprite) {
+                    EditorGUIUtility.ShowObjectPicker<FizzikSprite>(null, false, "", displayedObjectPickerId);
+                }
+
+                shouldDisplayObjectPicker = false;
+            }
+            if (e.type == EventType.ExecuteCommand && e.commandName == "ObjectSelectorClosed") {
+                if (EditorGUIUtility.GetObjectPickerControlID() == cid_OpenExistingSprite) {
+                    //Open Existing Sprite Object Selected
+                    UnityEngine.Object pickerObject = EditorGUIUtility.GetObjectPickerObject();
+
+                    if (pickerObject != null) {
+                        string path = AssetDatabase.GetAssetPath(pickerObject);
+
+                        openExistingSprite(path);
+                    }
+                }
+            }
+
             /****************************************************************
              ******** ---> Begin Application content
              ****************************************************************/
@@ -192,26 +217,6 @@ namespace Fizzik {
                     if (wpath != txt_WorkingSprite_editorprefs_pathnull) {
                         //We still have a workingSprite available from the stored path, reload
                         //TODO OPEN FIZZIKSPRITE
-                    }
-
-                    /****************************************************************
-                     ******** Open Existing Sprite
-                     ****************************************************************/
-                    //Open Existing Sprite -- First check to see if one was selected, otherwise act on the Button
-                    if (e.type == EventType.ExecuteCommand
-                        && e.commandName == "ObjectSelectorUpdated"
-                        && EditorGUIUtility.GetObjectPickerControlID() == cid_OpenExistingSprite) {
-                        string path = AssetDatabase.GetAssetPath(EditorGUIUtility.GetObjectPickerObject());
-                        //Open workingSprite from asset path
-                        //TODO OPEN FIZZIKSPRITE
-
-                        //showDebugMessage("Event Fired");
-
-                        //return;
-                    }
-
-                    if (GUILayout.Button(new GUIContent(txt_OpenExistingSprite_btn_title, txt_OpenExistingSprite_btn_ttip))) {
-                        EditorGUIUtility.ShowObjectPicker<FizzikSprite>(null, false, "", cid_OpenExistingSprite);
                     }
                 }
             }
@@ -243,6 +248,11 @@ namespace Fizzik {
          */
         void OnDestroy() {
             if (hasInit) {
+                //Save working sprite
+                if (workingSprite != null) {
+                    performAssetSave();
+                }
+
                 //Save editor settings
                 saveUserSettings();
 
@@ -290,24 +300,24 @@ namespace Fizzik {
 
         /*
          * This is called from external assets when they want to be opened from the project browser.
-         * This should handle things like prompting the user to save an existing workingSprite if they haven't yet.
-         * Then it will return true if the window will now open the calling asset, or false if the user declined to close previous workingSprite.
+         * It will return true if the window will now open the calling asset, or false if the user declined to close previous workingSprite.
          */
         public static bool openAssetFromProjectBrowser(UnityEngine.Object obj) {
-            if (FizzikSpriteEditor.editor == null) {
-                //Init and then open asset
-                Init();
+            if (obj != null) {
+                if (editor == null) {
+                    Init();
+                }
 
-                editor.showDebugMessage("Asset opened from browser");
+                string path = AssetDatabase.GetAssetPath(obj);
+
+                editor.openExistingSprite(path);
+
+                editor.Focus();
 
                 return true;
             }
             else {
-                //Check for saving
-
-                editor.showDebugMessage("Save it!");
-
-                return true;
+                return false;
             }
         }
 
@@ -465,7 +475,9 @@ namespace Fizzik {
             }
             
             //Handle panning from mousewheel dragging event
-            if ((subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == 2) {
+            if ((dragContext == -1 || dragContext == 2) && (subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == 2) {
+                dragContext = 2;
+
                 //const float zoomCurve = .12f;
 
                 Vector2 delta = -e.delta;
@@ -478,9 +490,12 @@ namespace Fizzik {
 
                 e.Use();
             }
-            //Mouse drag was released, reset drag flag
-            if (canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == 2) {
+            //Mouse pan drag was released, reset drag flag
+            if ((dragContext == 2) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == 2) {
                 canvasDragAlreadyStarted = false;
+                dragContext = -1;
+
+                e.Use();
             }
 
             /*
@@ -503,6 +518,7 @@ namespace Fizzik {
             float canvasmousey = canvasMousePos.y;
 
             //Canvas size helpers
+            Rect cza = canvasZoomArea;
             float ctw = canvasZoomArea.size.x;
             float cth = canvasZoomArea.size.y;
             float hctw = ctw / 2f;
@@ -514,7 +530,7 @@ namespace Fizzik {
             int boxh = workingSprite.imgHeight;
             float hboxw = boxw / 2f;
             float hboxh = boxh / 2f;
-            Rect boxRect = new Rect(hctw - hboxw - zo.x, hcth - hboxh - zo.y, boxw, boxh); //These values mae sense only inside of the zoom GUI.matrix farther below
+            Rect boxRect = new Rect(hctw - hboxw - zo.x, hcth - hboxh - zo.y, boxw, boxh); //These values make sense only inside of the zoom GUI.matrix farther below
 
             //Voodoo magic starts here
             float ho = dss_Toolbar_height; //Toolbar offset
@@ -539,6 +555,68 @@ namespace Fizzik {
             float boxmouseyraw = (mousey - sgrect.y) / canvasZoom;
             int boxmousex = Mathf.FloorToInt(boxmousexraw);
             int boxmousey = Mathf.FloorToInt(boxmouseyraw);
+
+            /*
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             */
+
+            /*
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             * Handle all other events that rely on helper variables being defined (things such as drawing tools, etc)
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             */
+            /*
+             * Per-Pixel drawing tools
+             */
+            // Test debug click related pixel drawing (using left mouse) :: TODO - make sure valid tools are selected, perform tool relative actions
+            // This conditional makes sure that the mouse is inside the canvas area before checking events, so that the window toolbar can still be used
+            if (mousex >= cza.x && mousex < cza.x + ctw && mousey >= cza.y && mousey < cza.y + cth) {
+                if ((dragContext == -1) && (subwindowUnderMouse == null) && e.type == EventType.MouseUp && e.button == 0) {
+                    //Check to make sure we aren't redrawing the same pixel within the same drag, make sure the pixel we try to draw is inside the box
+                    if (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh) {
+                        FizzikFrame frame = workingSprite.getFrame(0);
+                        FizzikLayer layer = frame.getLayer(0);
+                        layer.setPixelTopLeftOrigin(boxmousex, boxmousey, Color.red);
+                        frame.updateTexture();
+                        makeDirty();
+
+                        e.Use(); //This use has to be internal, because the action becomes valid only inside of these constraints, otherwise left mouse should be freed up
+                    }
+                }
+                // Test debug drag related pixel drawing (using left mouse) :: TODO - drawing 1 pixel long lines from previous to current instead, so no empty space when mouse is fast.
+                if ((dragContext == -1 || dragContext == 0) && (subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == 0) {
+                    dragContext = 0;
+
+                    //Check to make sure we aren't redrawing the same pixel within the same drag, make sure the pixel we try to draw is inside the box
+                    if ((((int) lastToolDragCoordinate.x != boxmousex) || ((int) lastToolDragCoordinate.y != boxmousey))
+                        && (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh)) {
+                        FizzikFrame frame = workingSprite.getFrame(0);
+                        FizzikLayer layer = frame.getLayer(0);
+                        layer.setPixelTopLeftOrigin(boxmousex, boxmousey, Color.red);
+                        frame.updateTexture();
+                        makeDirty();
+                    }
+
+                    lastToolDragCoordinate = new Vector2(boxmousex, boxmousey);
+
+                    canvasDragAlreadyStarted = true;
+
+                    e.Use();
+                }
+            }
+
+            //Mouse debug drag related pixel drawing was released, reset drag flag
+            if ((dragContext == 0) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == 0) {
+                canvasDragAlreadyStarted = false;
+                dragContext = -1;
+
+                e.Use();
+            }
 
             /*
              * -----------------------------------------------------------------------------------------------------------------
@@ -675,7 +753,8 @@ namespace Fizzik {
                     //createNewSprite();
                 });
                 menu.AddItem(new GUIContent("Open Existing Sprite"), false, () => {
-
+                    displayedObjectPickerId = cid_OpenExistingSprite;
+                    shouldDisplayObjectPicker = true;
                 });
 
                 menu.AddSeparator("");
@@ -746,49 +825,69 @@ namespace Fizzik {
         }
 
         /*
-         * Prompts the user for a save path, and then creates a new FizzikSprite with width, height at that path,
-         * while also setting it to the current working sprite
+         * Creates a new FizzikSprite with width, height at that path,
+         * while also setting it to the current working sprite.
          */
         public void createNewSprite(int w, int h) {
-            if (!haveWorkingSprite()) {
-                string dirpath = EditorPrefs.GetString(txt_LastUsedSaveDir_editorprefs_pathkey, txt_LastUsedSaveDir_editorprefs_pathdefault);
+            string dirpath = EditorPrefs.GetString(txt_LastUsedSaveDir_editorprefs_pathkey, txt_LastUsedSaveDir_editorprefs_pathdefault);
 
-                string path;
-                bool wasrelpath = false;
-                if (dirpath == txt_LastUsedSaveDir_editorprefs_pathdefault) {
-                    //Default to assets root directory
-                    path = EditorUtility.SaveFilePanelInProject(txt_CreateNewSprite_dialog_title,
-                        txt_CreateNewSprite_dialog_default,
-                        txt_CreateNewSprite_dialog_filetype, "");
+            string path;
+            bool wasrelpath = false;
+            if (dirpath == txt_LastUsedSaveDir_editorprefs_pathdefault) {
+                //Default to assets root directory
+                path = EditorUtility.SaveFilePanelInProject(txt_CreateNewSprite_dialog_title,
+                    txt_CreateNewSprite_dialog_default,
+                    txt_CreateNewSprite_dialog_filetype, "");
 
-                    wasrelpath = true;
-                }
-                else {
-                    //Use user's last save directory
-                    path = EditorUtility.SaveFilePanel(txt_CreateNewSprite_dialog_title,
-                    dirpath,
-                    txt_CreateNewSprite_dialog_default, txt_CreateNewSprite_dialog_filetype);
-
-                    wasrelpath = false;
-                }
-
-                if (path != "") {
-                    string relpath = (wasrelpath) ? (path) : (FileUtil.GetProjectRelativePath(path));
-
-                    //Path was entered, store the used path and create the asset
-                    EditorPrefs.SetString(txt_LastUsedSaveDir_editorprefs_pathkey, Path.GetDirectoryName(path));
-
-                    FizzikSprite spr = ScriptableObject.CreateInstance<FizzikSprite>();
-
-                    AssetDatabase.CreateAsset(spr, relpath);
-
-                    spr.Init(w, h);
-
-                    workingSprite = spr;
-
-                    performAssetSave();
-                }
+                wasrelpath = true;
             }
+            else {
+                //Use user's last save directory
+                path = EditorUtility.SaveFilePanel(txt_CreateNewSprite_dialog_title,
+                dirpath,
+                txt_CreateNewSprite_dialog_default, txt_CreateNewSprite_dialog_filetype);
+
+                wasrelpath = false;
+            }
+
+            if (path != "") {
+                string relpath = (wasrelpath) ? (path) : (FileUtil.GetProjectRelativePath(path));
+
+                //Path was entered, store the used path and create the asset
+                EditorPrefs.SetString(txt_LastUsedSaveDir_editorprefs_pathkey, Path.GetDirectoryName(path));
+
+                FizzikSprite spr = ScriptableObject.CreateInstance<FizzikSprite>();
+
+                AssetDatabase.CreateAsset(spr, relpath);
+
+                spr.Init(w, h);
+
+                workingSprite = spr;
+
+                performAssetSave();
+            }
+        }
+
+        /*
+         * Opens an existing fizziksprite inside of the project folder
+         */
+        public void openExistingSprite(string path) {
+            workingSprite = AssetDatabase.LoadAssetAtPath<FizzikSprite>(path);
+
+            workingSprite.reconstructTextures();
+
+            performAssetSave();
+        }
+
+        /*
+         * Method that can be called to set changesSaved to false, should be called anytime a change occurs to underlying sprite data that the user might want to eventually
+         * save before exiting.
+         */
+        protected void makeDirty() {
+            if (workingSprite != null) {
+                EditorUtility.SetDirty(workingSprite);
+            }
+            changesSaved = false;
         }
 
         public bool haveWorkingSprite() {

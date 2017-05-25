@@ -8,7 +8,15 @@ namespace Fizzik {
     public class FizzikSpriteInspector : Editor {
 
         public override void OnInspectorGUI() {
-            EditorGUILayout.LabelField("Testing custom inspector!");
+            FizzikSprite obj = (FizzikSprite) target;
+
+            EditorGUILayout.BeginVertical();
+
+            EditorGUILayout.LabelField("Frame Count: " + obj.frames.Count);
+            EditorGUILayout.LabelField("Layer 0 pixeldata:");
+            EditorGUILayout.LabelField(obj.getFrame(0).getLayer(0).pixels.ToString());
+
+            EditorGUILayout.EndVertical();
         }
     }
 }
