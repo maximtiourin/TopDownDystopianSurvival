@@ -10,6 +10,8 @@ namespace Fizzik {
     public class ToolPalette : FizzikSubWindow {
         public static string defaultTitle = "Tool Palette";
 
+        const int MOUSE_DRAG_BUTTON = 0;
+
         private FizzikSpriteEditor editor;
         private Vector2 relativePos = Vector2.zero;
         private Rect currentRect;
@@ -35,7 +37,13 @@ namespace Fizzik {
 
             EditorGUILayout.EndVertical();
 
-            GUI.DragWindow();
+            if (Event.current.button == MOUSE_DRAG_BUTTON) {
+                GUI.DragWindow();
+            }
+        }
+
+        public void destroy() {
+
         }
 
         /*
@@ -86,8 +94,10 @@ namespace Fizzik {
             currentRect = new Rect(
                 EditorPrefs.GetFloat(txt_editorprefs_rectx, dss_ToolPalette_rect.x),
                 EditorPrefs.GetFloat(txt_editorprefs_recty, dss_ToolPalette_rect.y),
-                EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_ToolPalette_rect.size.x),
-                EditorPrefs.GetFloat(txt_editorprefs_recth, dss_ToolPalette_rect.size.y)
+                dss_ToolPalette_rect.size.x,
+                dss_ToolPalette_rect.size.y
+                //EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_ToolPalette_rect.size.x),
+                //EditorPrefs.GetFloat(txt_editorprefs_recth, dss_ToolPalette_rect.size.y)
             );
             enabled = EditorPrefs.GetBool(txt_editorprefs_enabled, enabled);
         }

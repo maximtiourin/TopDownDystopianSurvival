@@ -249,8 +249,9 @@ namespace Fizzik {
         void OnDestroy() {
             if (hasInit) {
                 //Save working sprite
-                if (workingSprite != null) {
+                if (workingSprite) {
                     performAssetSave();
+                    workingSprite.destroyTextures();
                 }
 
                 //Save editor settings
@@ -259,6 +260,7 @@ namespace Fizzik {
                 //Save subwindow settings
                 foreach (FizzikSubWindow sw in subwindows) {
                     sw.saveUserSettings();
+                    sw.destroy();
                 }
 
                 //Cleanup any remaining menuwindows
@@ -325,10 +327,9 @@ namespace Fizzik {
          * Handles doing any kind of critical save operations, then sets the save flag to true so that
          * closing the editor, or opening a new file aren't impeded.
          */
-        protected void performAssetSave() {
+        public void performAssetSave() {
             if (haveWorkingSprite()) {
                 AssetDatabase.SaveAssets();
-                changesSaved = true;
             }
         }
 
@@ -459,6 +460,28 @@ namespace Fizzik {
          * TODO, lots of things to implement, currently just testing zoom/panning of prototype canvas
          */
         protected void handleCanvas(Event e) {
+            //Drag Context
+            const int SUBWINDOW = -2;
+            const int NONE = -1;
+            const int MOUSE_LEFT = 0;
+            const int MOUSE_RIGHT = 1;
+            const int MOUSE_MIDDLE = 2;
+
+            //Handle preventing cancelling of a subwindow drag if mouse moves back into canvas too quickly. Dont consume input since it needs to be passed to subwindow
+            if ((dragContext == NONE) && (subwindowUnderMouse != null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == MOUSE_LEFT) {
+                dragContext = SUBWINDOW;
+
+                canvasDragAlreadyStarted = true;
+            }
+            if ((dragContext == SUBWINDOW) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
+                canvasDragAlreadyStarted = false;
+                dragContext = NONE;
+            }
+            if ((dragContext == SUBWINDOW) && canvasDragAlreadyStarted && !mouseInsideEditor) {
+                canvasDragAlreadyStarted = false;
+                dragContext = NONE;
+            }
+
             //Handle zooming from mousewheel scrolling event
             if ((subwindowUnderMouse == null) && e.type == EventType.ScrollWheel) {
                 Vector2 mousePos = e.mousePosition;
@@ -475,8 +498,8 @@ namespace Fizzik {
             }
             
             //Handle panning from mousewheel dragging event
-            if ((dragContext == -1 || dragContext == 2) && (subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == 2) {
-                dragContext = 2;
+            if ((dragContext == NONE || dragContext == MOUSE_MIDDLE) && (subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == MOUSE_MIDDLE) {
+                dragContext = MOUSE_MIDDLE;
 
                 //const float zoomCurve = .12f;
 
@@ -491,9 +514,9 @@ namespace Fizzik {
                 e.Use();
             }
             //Mouse pan drag was released, reset drag flag
-            if ((dragContext == 2) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == 2) {
+            if ((dragContext == MOUSE_MIDDLE) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_MIDDLE) {
                 canvasDragAlreadyStarted = false;
-                dragContext = -1;
+                dragContext = NONE;
 
                 e.Use();
             }
@@ -573,15 +596,16 @@ namespace Fizzik {
             /*
              * Per-Pixel drawing tools
              */
-            // Test debug click related pixel drawing (using left mouse) :: TODO - make sure valid tools are selected, perform tool relative actions
             // This conditional makes sure that the mouse is inside the canvas area before checking events, so that the window toolbar can still be used
             if (mousex >= cza.x && mousex < cza.x + ctw && mousey >= cza.y && mousey < cza.y + cth) {
-                if ((dragContext == -1) && (subwindowUnderMouse == null) && e.type == EventType.MouseUp && e.button == 0) {
+                // Test debug click related pixel drawing (using left mouse) :: TODO - make sure valid tools are selected, perform tool relative actions
+                if ((dragContext == NONE) && (subwindowUnderMouse == null) && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
                     //Check to make sure we aren't redrawing the same pixel within the same drag, make sure the pixel we try to draw is inside the box
                     if (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh) {
                         FizzikFrame frame = workingSprite.getFrame(0);
                         FizzikLayer layer = frame.getLayer(0);
-                        layer.setPixelTopLeftOrigin(boxmousex, boxmousey, Color.red);
+                        layer.setPixelTopLeftOrigin(boxmousex, boxmousey, colorPalette.color);
+                        workingSprite.offerRecentColor(colorPalette.color);
                         frame.updateTexture();
                         makeDirty();
 
@@ -589,15 +613,16 @@ namespace Fizzik {
                     }
                 }
                 // Test debug drag related pixel drawing (using left mouse) :: TODO - drawing 1 pixel long lines from previous to current instead, so no empty space when mouse is fast.
-                if ((dragContext == -1 || dragContext == 0) && (subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == 0) {
-                    dragContext = 0;
+                if ((dragContext == NONE || dragContext == MOUSE_LEFT) && (subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == MOUSE_LEFT) {
+                    dragContext = MOUSE_LEFT;
 
                     //Check to make sure we aren't redrawing the same pixel within the same drag, make sure the pixel we try to draw is inside the box
                     if ((((int) lastToolDragCoordinate.x != boxmousex) || ((int) lastToolDragCoordinate.y != boxmousey))
                         && (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh)) {
                         FizzikFrame frame = workingSprite.getFrame(0);
                         FizzikLayer layer = frame.getLayer(0);
-                        layer.setPixelTopLeftOrigin(boxmousex, boxmousey, Color.red);
+                        layer.setPixelTopLeftOrigin(boxmousex, boxmousey, colorPalette.color);
+                        workingSprite.offerRecentColor(colorPalette.color);
                         frame.updateTexture();
                         makeDirty();
                     }
@@ -611,9 +636,9 @@ namespace Fizzik {
             }
 
             //Mouse debug drag related pixel drawing was released, reset drag flag
-            if ((dragContext == 0) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == 0) {
+            if ((dragContext == MOUSE_LEFT) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
                 canvasDragAlreadyStarted = false;
-                dragContext = -1;
+                dragContext = NONE;
 
                 e.Use();
             }
@@ -627,6 +652,12 @@ namespace Fizzik {
 
             //Developer Window DEBUG
             if (DEVELOPER && devWindow.isEnabled()) {
+                devWindow.append("Canvas Dragging: ");
+                devWindow.appendLine(canvasDragAlreadyStarted);
+
+                devWindow.append("Canvas DragContext: ");
+                devWindow.appendLine(dragContext);
+
                 devWindow.append("Event Mouse Pos: {");
                 devWindow.appendCSV(mousex, mousey);
                 devWindow.appendLine("}");
@@ -862,6 +893,10 @@ namespace Fizzik {
 
                 spr.Init(w, h);
 
+                if (workingSprite) {
+                    workingSprite.destroyTextures();
+                }
+
                 workingSprite = spr;
 
                 performAssetSave();
@@ -872,6 +907,10 @@ namespace Fizzik {
          * Opens an existing fizziksprite inside of the project folder
          */
         public void openExistingSprite(string path) {
+            if (workingSprite) {
+                workingSprite.destroyTextures();
+            }
+
             workingSprite = AssetDatabase.LoadAssetAtPath<FizzikSprite>(path);
 
             workingSprite.reconstructTextures();
@@ -880,18 +919,20 @@ namespace Fizzik {
         }
 
         /*
-         * Method that can be called to set changesSaved to false, should be called anytime a change occurs to underlying sprite data that the user might want to eventually
-         * save before exiting.
+         * Method that can be called to set changesSaved to false, should be called anytime a change occurs to underlying sprite data
          */
         protected void makeDirty() {
             if (workingSprite != null) {
                 EditorUtility.SetDirty(workingSprite);
             }
-            changesSaved = false;
         }
 
         public bool haveWorkingSprite() {
             return workingSprite != null;
+        }
+
+        public FizzikSprite getWorkingSprite() {
+            return workingSprite;
         }
 
         public bool getGridOverlayEnabled() {

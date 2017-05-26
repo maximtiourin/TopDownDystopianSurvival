@@ -37,6 +37,16 @@ namespace Fizzik {
             updateTexture();
         }
 
+        public void destroyTextures() {
+            foreach (FizzikLayer layer in layers) {
+                layer.destroyTexture();
+            }
+
+            if (texture) {
+                Object.DestroyImmediate(texture);
+            }
+        }
+
         /*
          * Gets the finalized texture that contains all visible layers and combines them using
          * their appropriate blend modes

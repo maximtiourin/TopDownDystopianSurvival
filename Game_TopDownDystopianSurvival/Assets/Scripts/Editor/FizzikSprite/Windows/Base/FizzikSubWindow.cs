@@ -18,5 +18,6 @@ namespace Fizzik {
         bool isEnabled(); //Should return whether or not this subwindow is enabled (the subwindow itself shouldnt do anything with this value, editor will handle choosing what to do)
         Vector2 getRelativeWindowPosition(); //Should return the stored relative window position, this value should have been set by the editor, and will be used by editor
         void setRelativeWindowPosition(Vector2 relpos); //Should be set only by the editor, as it will be used by the editor to reposition the window
+        void destroy(); //Should cleanup any memory such as textures
     }
 }

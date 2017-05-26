@@ -7,6 +7,8 @@ namespace Fizzik {
     public class DeveloperWindow : FizzikSubWindow {
         public static string defaultTitle = "Developer";
 
+        const int MOUSE_DRAG_BUTTON = 0;
+
         private FizzikSpriteEditor editor;
         private Vector2 relativePos = Vector2.zero;
         private Rect currentRect;
@@ -32,7 +34,9 @@ namespace Fizzik {
 
             GUILayout.EndScrollView();
 
-            GUI.DragWindow();
+            if (Event.current.button == MOUSE_DRAG_BUTTON) {
+                GUI.DragWindow();
+            }
         }
 
         /*
@@ -46,16 +50,16 @@ namespace Fizzik {
          * Input = "val1"
          * OutputString += "val1"
          */
-        public void append(string str) {
-            output += str;
+        public void append(object str) {
+            output += str.ToString();
         }
 
         /*
          * Input = "val1"
          * OutputString += "val1\n"
          */
-        public void appendLine(string str) {
-            output += str + "\n";
+        public void appendLine(object str) {
+            output += str.ToString() + "\n";
         }
 
         /*
@@ -79,6 +83,10 @@ namespace Fizzik {
 
         public string getOutput() {
             return output;
+        }
+
+        public void destroy() {
+
         }
 
         /*
@@ -129,8 +137,10 @@ namespace Fizzik {
             currentRect = new Rect(
                 EditorPrefs.GetFloat(txt_editorprefs_rectx, dss_DeveloperWindow_rect.x),
                 EditorPrefs.GetFloat(txt_editorprefs_recty, dss_DeveloperWindow_rect.y),
-                EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_DeveloperWindow_rect.size.x),
-                EditorPrefs.GetFloat(txt_editorprefs_recth, dss_DeveloperWindow_rect.size.y)
+                dss_DeveloperWindow_rect.size.x,
+                dss_DeveloperWindow_rect.size.y
+                //EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_DeveloperWindow_rect.size.x),
+                //EditorPrefs.GetFloat(txt_editorprefs_recth, dss_DeveloperWindow_rect.size.y)
             );
             enabled = EditorPrefs.GetBool(txt_editorprefs_enabled, enabled);
         }

@@ -49,6 +49,12 @@ namespace Fizzik {
             updateTexture();
         }
 
+        public void destroyTexture() {
+            if (texture) {
+                Object.DestroyImmediate(texture);
+            }
+        }
+
         /*
          * Updates the layer's internal texture using it's pixel data
          */
