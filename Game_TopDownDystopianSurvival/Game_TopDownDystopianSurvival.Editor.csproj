@@ -129,6 +129,7 @@
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Sprite\FizzikLayer.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Sprite\FizzikSprite.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\ColorUtility.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\DrawPixelIntent.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\RectUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\ResizeEvent.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\Texture2DUtility.cs" />

@@ -6,6 +6,7 @@ using UnityEngine;
 namespace Fizzik {
     /*
      * A FizzikFrame is a collection of layers that also stores animation information such as duration, etc.
+     * @author Maxim Tiourin
      */
     [System.Serializable]
     public class FizzikFrame {
@@ -60,12 +61,14 @@ namespace Fizzik {
 
             if (visibleLayers.Count > 0) {
                 foreach (FizzikLayer layer in visibleLayers) {
-                    if (texture == null) {
-                        texture = FizzikLayer.blend(layer.texture, layer.opacity, layer.texture, layer.opacity, layer.blendMode);
-                    }
-                    else {
-                        texture = FizzikLayer.blend(texture, 1f, layer.texture, layer.opacity, layer.blendMode);
-                    }
+                    //if (layer.texture) {
+                        if (texture == null) {
+                            texture = FizzikLayer.blend(layer.texture, layer.opacity, layer.texture, layer.opacity, layer.blendMode);
+                        }
+                        else {
+                            texture = FizzikLayer.blend(texture, 1f, layer.texture, layer.opacity, layer.blendMode);
+                        }
+                    //}
                 }
             }
             else {

@@ -7,6 +7,8 @@ namespace Fizzik {
     /*
      * A FizzikLayer stores pixel color information, as well as things such as blending modes and layer opacity,
      * whether or not the layer is locked or visible, as well as methods to aid in 'drawing' pixels inside the layer, etc.
+     *
+     * @author - Maxim Tiourin
      */
     [System.Serializable]
     public class FizzikLayer {
@@ -25,6 +27,11 @@ namespace Fizzik {
 
         public Texture2D texture;
 
+        //Batch drawing optimizations
+        private bool batched = false;
+        private Vector2 minBatchPoint;
+        private Vector2 maxBatchPoint;
+
         public FizzikLayer(int w, int h) {
             imgWidth = w;
             imgHeight = h;
@@ -36,6 +43,8 @@ namespace Fizzik {
             visible = true;
             locked = false;
 
+            clearBatch();
+
             reconstructTexture();
         }
 
@@ -43,24 +52,68 @@ namespace Fizzik {
          * Called when the texture needs to be completely remade from pixel array data
          */
         public void reconstructTexture() {
+            destroyTexture();
+
             texture = new Texture2D(imgWidth, imgHeight);
             texture.filterMode = FilterMode.Point;
 
-            updateTexture();
+            updateTexture(true);
         }
 
+        /*
+         * Destroys underlying layer texture while preserving pixel array data
+         */
         public void destroyTexture() {
             if (texture) {
                 Object.DestroyImmediate(texture);
             }
+
+            clearBatch();
         }
 
         /*
-         * Updates the layer's internal texture using it's pixel data
+         * Updates the layer's internal texture using its pixel data
          */
-        public void updateTexture() {
-            texture.SetPixels(pixels);
-            texture.Apply();
+        public void updateTexture(bool reconstruct = false) {
+            if (texture != null) {
+                if (reconstruct) {
+                    clearBatch();
+                }
+
+                if (!reconstruct && batched) {
+                    Vector2 min = minBatchPoint;
+                    Vector2 max = maxBatchPoint;
+
+                    Color[] batchArea = getPixelsInArea((int) min.x, (int) min.y, (int) max.x, (int) max.y);
+
+                    texture.SetPixels((int) min.x, (int) min.y, (int) (max.x - min.x + 1), (int) (max.y - min.y + 1), batchArea);
+
+                    clearBatch();
+                }
+                else {
+                    texture.SetPixels(pixels);
+                }
+
+                texture.Apply();
+            }
+        }
+
+        /*
+         * Resets batching area points and flag
+         */
+        public void clearBatch() {
+            minBatchPoint = new Vector2(imgWidth - 1, imgHeight - 1);
+            maxBatchPoint = Vector2.zero;
+            batched = false;
+        }
+
+        public void batchPixel(int px, int py) {
+            Vector2 min = minBatchPoint;
+            Vector2 max = maxBatchPoint;
+            minBatchPoint = new Vector2(Mathf.Min(min.x, px), Mathf.Min(min.y, py));
+            maxBatchPoint = new Vector2(Mathf.Max(max.x, px), Mathf.Max(max.y, py));
+
+            batched = true;
         }
 
         /*
@@ -84,6 +137,24 @@ namespace Fizzik {
             return pixels[((imgHeight - 1 - py) * imgWidth) + px];
         }
 
+        public Color[] getPixelsInArea(int minx, int miny, int maxx, int maxy) {
+            int subwidth = maxx - minx + 1;
+            int subheight = maxy - miny + 1;
+
+            Color[] subarr = new Color[subwidth * subheight];
+
+            for (int y = miny; y <= maxy; y++) {
+                int suby = y - miny;
+                for (int x = minx; x <= maxx; x++) {
+                    int subx = x - minx;
+
+                    subarr[suby * subwidth + subx] = pixels[y * imgWidth + x];
+                }
+            }
+
+            return subarr;
+        }
+
         /*
          * Sets pixel at x,y with origin at bottom left, coords increasing top right
          * This is in the format that Texture2D handles pixels
@@ -94,22 +165,83 @@ namespace Fizzik {
             int py = Mathf.Clamp(y, 0, imgHeight - 1);
             pixels[(py * imgWidth + px)] = color;
 
-            if (!batch) {
+            if (batch) {
+                batchPixel(px, py);
+            }
+            else {
                 //Alter layer texture
                 texture.SetPixel(px, py, color);
                 texture.Apply();
             }
         }
 
+        /*
+         * Sets pixel at x,y with origin at top left, coords increasing bottom right
+         * This uses origin similar to unity GUI, which can make things easier when working
+         * in those contexts.
+         * If batch = true, won't alter underlying texture, just the pixel data structure.
+         */
         public void setPixelTopLeftOrigin(int x, int y, Color color, bool batch = false) {
             int px = Mathf.Clamp(x, 0, imgWidth - 1);
             int py = Mathf.Clamp(y, 0, imgHeight - 1);
             pixels[((imgHeight - 1 - py) * imgWidth) + px] = color;
 
-            if (!batch) {
+            if (batch) {
+                batchPixel(px, imgHeight - 1 - py);
+            }
+            else {
                 //Alter layer texture
                 texture.SetPixel(px, imgHeight - 1 - py, color);
                 texture.Apply();
+            }
+        }
+
+        /*
+         * Sets pixels on a linearly interpolated line from 'start' to 'end' where origin is at bottom left, coords increasing top right
+         * This is in the format that Texture2D handles pixels
+         * If batch = true, won't alter underlying texture, just the pixel data structure.
+         */
+        public void setPixelsInterpolate(int startx, int starty, int endx, int endy, Color color, bool batch = false) {
+            Vector2 start = new Vector2(startx, starty);
+            Vector2 end = new Vector2(endx, endy);
+
+            float incAmount = Vector2.Distance(start, end) * 3f;
+            float inc = 1f / incAmount;
+            
+            for (float t = 0f; t <= 1f; t += inc) {
+                Vector2 step = Vector2.Lerp(start, end, t);
+
+                setPixel((int) step.x, (int) step.y, color, true); //Internal mini-batch
+            }
+            
+            //If !batch then update our internal mini-batch, otherwise allow other external batching operations to continue
+            if (!batch) {
+                updateTexture();
+            }
+        }
+
+        /*
+         * Sets pixels on a linearly interpolated line from 'start' to 'end' where origin is at top left, coords increasing bottom right
+         * This uses origin similar to unity GUI, which can make things easier when working
+         * in those contexts.
+         * If batch = true, won't alter underlying texture, just the pixel data structure.
+         */
+        public void setPixelsInterpolateTopLeftOrigin(int startx, int starty, int endx, int endy, Color color, bool batch = false) {
+            Vector2 start = new Vector2(startx, starty);
+            Vector2 end = new Vector2(endx, endy);
+
+            float incAmount = Vector2.Distance(start, end) * 3f;
+            float inc = 1f / incAmount;
+
+            for (float t = 0f; t <= 1f; t += inc) {
+                Vector2 step = Vector2.Lerp(start, end, t);
+
+                setPixelTopLeftOrigin((int) step.x, (int) step.y, color, true); //Internal mini-batch
+            }
+
+            //If !batch then update our internal mini-batch, otherwise allow other external batching operations to continue
+            if (!batch) {
+                updateTexture();
             }
         }
 

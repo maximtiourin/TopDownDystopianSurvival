@@ -9,8 +9,8 @@ namespace Fizzik {
     /*
      * A FizzikSprite is a collection of FizzikFrames that is capable of running through and manipulating those frames
      * in a variety of ways.
+     * @author Maxim Tiourin
      */
-    //[CreateAssetMenu(fileName = "FizzikSprite", menuName = "Fizzik/Sprite", order = 1)] //Cant use this because we need to be able to init width and height
     [System.Serializable]
     public class FizzikSprite : ScriptableObject {
         public int imgWidth;

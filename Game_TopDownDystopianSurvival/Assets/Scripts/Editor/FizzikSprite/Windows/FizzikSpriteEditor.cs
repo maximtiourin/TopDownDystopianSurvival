@@ -10,9 +10,6 @@ namespace Fizzik {
     /*
      * The FizzikSprite Editor window that allows the creation and editing of FizzikSprites
      * @author Maxim Tiourin
-     *
-     * - Cool Idea, allow the marking of certain layers as "hotswappable", which means they are exposed to code and can have their texture replaced by code at will.
-     *      This will allow doing stuff like different skins or equipment, etc.
      */
     public class FizzikSpriteEditor : EditorWindow {
         public static FizzikSpriteEditor editor;
@@ -24,6 +21,15 @@ namespace Fizzik {
         protected DeveloperWindow devWindow;
 
         protected FizzikSprite workingSprite; //The currently open fizziksprite
+
+        //Pixel buffering
+        protected List<DrawPixelIntent> pixelIntents; //Buffered pixel drawing 
+        const int pixelBufferLow = 65536; //256 x 256 :: all areas less than this amount will be subjected to LowRate
+        const int pixelBufferHigh  = 262144; //512 x 512 :: all areas greater than equal to Low and less than High will be subjected to linear rate between LowRate and HighRate, greater than equal to High will be subjected to HighRate
+        const float pixelBufferLowRate = .05f; //aim to draw buffered intents 20 times a second
+        const float pixelBufferHighRate = .5f; //aim to draw buffered intents 1 times a second
+        protected float pixelBufferDrawRate = pixelBufferLowRate; //In seconds, can be dynamically scaled to be larger the larger the image is, to prevent losing most stroke data
+        protected double nextBufferDraw = 0; //When the next buffer of pixel intents should be drawn in time since unity editor was started
 
         //Canvas variables
         protected Matrix4x4 previousGUIMatrix;
@@ -39,6 +45,7 @@ namespace Fizzik {
         protected Color gridOverlayColor;
         protected int dragContext = -1; //The id of the mouse button that is consequently used as a unique id for drag events, so that once a drag starts, it completes with same mouse button
         protected bool canvasDragAlreadyStarted = false; //Allows drags to continue when hovering over subwindows, if those drags started outside of the subwindow
+        protected bool lastToolDragContinuous = false; //Is true as long as a tool drag has been continuously held down, allowing interpolation
         protected Vector2 lastToolDragCoordinate = new Vector2(-9999f, -9999f); //The last coordinate of the mouse that is tracked during a drag in relation to tool events
 
         //Main editor variables
@@ -63,6 +70,9 @@ namespace Fizzik {
             //Instantiate structures
             editor.subwindows = new List<FizzikSubWindow>();
             editor.menuwindows = new List<FizzikMenuOptionsWindow>();
+
+            //Pixel buffering
+            editor.pixelIntents = new List<DrawPixelIntent>();
 
             //Load user settings
             editor.loadUserSettings();
@@ -99,16 +109,64 @@ namespace Fizzik {
             editor.tex_windowlogo = Resources.Load<Texture>(rsc_windowlogo);
             editor.tex_editorimagebg = Resources.Load<Texture>(rsc_editorimagebg);
 
-            string wpath = EditorPrefs.GetString(txt_WorkingSprite_editorprefs_pathkey, txt_WorkingSprite_editorprefs_pathnull);
-
-            if (wpath != "") {
-                //Load the workingSprite from the stored path
-                //TODO OPEN FIZZIKSPRITE
-            }
 
             editor.hasInit = true;
 
             editor.Repaint();
+        }
+
+        void Update() {
+            //Process Draw Pixel intents
+            if (EditorApplication.timeSinceStartup > nextBufferDraw) {
+                if (pixelIntents.Count > 0) {
+                    HashSet<FizzikLayer> drawnLayers = new HashSet<FizzikLayer>();
+                    HashSet<FizzikFrame> drawnFrames = new HashSet<FizzikFrame>();
+
+                    foreach (DrawPixelIntent intent in pixelIntents) {
+                        FizzikSprite sprite = workingSprite;
+                        FizzikFrame frame = intent.frame;
+                        FizzikLayer layer = intent.layer;
+
+                        if (sprite != null && frame != null && layer != null) {
+                            int px = intent.x;
+                            int py = intent.y;
+                            Color color = intent.color;
+
+                            switch (intent.type) {
+                                case (DrawPixelIntent.IntentType.Normal):
+                                    layer.setPixelTopLeftOrigin(px, py, color, true);
+                                    break;
+                                case (DrawPixelIntent.IntentType.Interpolate):
+                                    layer.setPixelsInterpolateTopLeftOrigin(intent.prevx, intent.prevy, px, py, color, true);
+                                    break;
+                                default:
+                                    layer.setPixelTopLeftOrigin(px, py, color, true);
+                                    break;
+                            } 
+                            
+                            drawnLayers.Add(layer);
+                        
+                            drawnFrames.Add(frame);
+
+                            sprite.offerRecentColor(color);
+                        }
+                    }
+
+                    foreach (FizzikLayer drawnLayer in drawnLayers) {
+                        drawnLayer.updateTexture();
+                    }
+
+                    foreach (FizzikFrame drawnFrame in drawnFrames) {
+                        drawnFrame.updateTexture();
+                    }
+
+                    pixelIntents.Clear();
+
+                    makeDirty();
+                }
+
+                nextBufferDraw = EditorApplication.timeSinceStartup + pixelBufferDrawRate;
+            }
         }
 
         /*
@@ -156,6 +214,8 @@ namespace Fizzik {
                 else {
                     devWindow.appendLine("Subwindow under mouse: <none>");
                 }
+
+                devWindow.appendLine("Pixel Buffer Draw Rate: " + pixelBufferDrawRate);
             }
 
             //Track editor resizing event
@@ -206,27 +266,6 @@ namespace Fizzik {
             //Toolbar
             handleGUIToolbar(e);
 
-            //TODO unreachable code for quick commenting/uncommenting
-            if (workingSprite == null) {
-                if (false) {
-                    /****************************************************************
-                     ******** - Check For WorkingSprite from previous open, or display new/open options
-                     ****************************************************************/
-                    string wpath = EditorPrefs.GetString(txt_WorkingSprite_editorprefs_pathkey, txt_WorkingSprite_editorprefs_pathnull);
-
-                    if (wpath != txt_WorkingSprite_editorprefs_pathnull) {
-                        //We still have a workingSprite available from the stored path, reload
-                        //TODO OPEN FIZZIKSPRITE
-                    }
-                }
-            }
-            else {
-                /****************************************************************
-                 ******** Work on already opened WorkingSprite
-                 ****************************************************************/
-                //Edit FizzikSprite
-            }
-
             //Subwindows
             if (haveWorkingSprite()) {
                 BeginWindows();
@@ -248,6 +287,9 @@ namespace Fizzik {
          */
         void OnDestroy() {
             if (hasInit) {
+                //Clear intents
+                pixelIntents.Clear();
+
                 //Save working sprite
                 if (workingSprite) {
                     performAssetSave();
@@ -298,6 +340,14 @@ namespace Fizzik {
                     sw.setCurrentRect(new Rect(position.size.x - relpos.x, position.size.y - relpos.y, sw.getCurrentRect().size.x, sw.getCurrentRect().size.y));
                 }
             }
+        }
+
+        protected void offerDrawPixelIntent(DrawPixelIntent.IntentType type, FizzikFrame frame, FizzikLayer layer, int px, int py, Color color) {
+            pixelIntents.Add(new DrawPixelIntent(type, frame, layer, px, py, color));
+        }
+
+        protected void offerDrawPixelIntent(DrawPixelIntent.IntentType type, FizzikFrame frame, FizzikLayer layer, int prevpx, int prevpy, int px, int py, Color color) {
+            pixelIntents.Add(new DrawPixelIntent(type, frame, layer, prevpx, prevpy, px, py, color));
         }
 
         /*
@@ -472,14 +522,18 @@ namespace Fizzik {
                 dragContext = SUBWINDOW;
 
                 canvasDragAlreadyStarted = true;
+
+                lastToolDragContinuous = false;
             }
             if ((dragContext == SUBWINDOW) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
                 canvasDragAlreadyStarted = false;
                 dragContext = NONE;
+                lastToolDragContinuous = false;
             }
             if ((dragContext == SUBWINDOW) && canvasDragAlreadyStarted && !mouseInsideEditor) {
                 canvasDragAlreadyStarted = false;
                 dragContext = NONE;
+                lastToolDragContinuous = false;
             }
 
             //Handle zooming from mousewheel scrolling event
@@ -517,6 +571,7 @@ namespace Fizzik {
             if ((dragContext == MOUSE_MIDDLE) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_MIDDLE) {
                 canvasDragAlreadyStarted = false;
                 dragContext = NONE;
+                lastToolDragContinuous = false;
 
                 e.Use();
             }
@@ -604,15 +659,12 @@ namespace Fizzik {
                     if (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh) {
                         FizzikFrame frame = workingSprite.getFrame(0);
                         FizzikLayer layer = frame.getLayer(0);
-                        layer.setPixelTopLeftOrigin(boxmousex, boxmousey, colorPalette.color);
-                        workingSprite.offerRecentColor(colorPalette.color);
-                        frame.updateTexture();
-                        makeDirty();
+                        offerDrawPixelIntent(DrawPixelIntent.IntentType.Normal, frame, layer, boxmousex, boxmousey, colorPalette.color);
 
                         e.Use(); //This use has to be internal, because the action becomes valid only inside of these constraints, otherwise left mouse should be freed up
                     }
                 }
-                // Test debug drag related pixel drawing (using left mouse) :: TODO - drawing 1 pixel long lines from previous to current instead, so no empty space when mouse is fast.
+                // Test debug drag related pixel drawing (using left mouse)
                 if ((dragContext == NONE || dragContext == MOUSE_LEFT) && (subwindowUnderMouse == null || canvasDragAlreadyStarted) && e.type == EventType.MouseDrag && e.button == MOUSE_LEFT) {
                     dragContext = MOUSE_LEFT;
 
@@ -621,10 +673,16 @@ namespace Fizzik {
                         && (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh)) {
                         FizzikFrame frame = workingSprite.getFrame(0);
                         FizzikLayer layer = frame.getLayer(0);
-                        layer.setPixelTopLeftOrigin(boxmousex, boxmousey, colorPalette.color);
-                        workingSprite.offerRecentColor(colorPalette.color);
-                        frame.updateTexture();
-                        makeDirty();
+                        
+                        if (!lastToolDragContinuous) {
+                            lastToolDragCoordinate = new Vector2(boxmousex, boxmousey);
+
+                            lastToolDragContinuous = true;
+                        }
+
+                        Vector2 last = lastToolDragCoordinate;
+
+                        offerDrawPixelIntent(DrawPixelIntent.IntentType.Interpolate, frame, layer, (int) last.x, (int) last.y, boxmousex, boxmousey, colorPalette.color);
                     }
 
                     lastToolDragCoordinate = new Vector2(boxmousex, boxmousey);
@@ -639,6 +697,7 @@ namespace Fizzik {
             if ((dragContext == MOUSE_LEFT) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
                 canvasDragAlreadyStarted = false;
                 dragContext = NONE;
+                lastToolDragContinuous = false;
 
                 e.Use();
             }
@@ -657,6 +716,9 @@ namespace Fizzik {
 
                 devWindow.append("Canvas DragContext: ");
                 devWindow.appendLine(dragContext);
+
+                devWindow.append("Canvas ToolDrag Continuous: ");
+                devWindow.appendLine(lastToolDragContinuous);
 
                 devWindow.append("Event Mouse Pos: {");
                 devWindow.appendCSV(mousex, mousey);
@@ -752,7 +814,7 @@ namespace Fizzik {
              * END SINGLE-PIXEL OVERLAYS
              */
 
-            editor.Repaint(); //Debug Repaint
+            editor.Repaint();
         }
 
         protected void handleGUIToolbar(Event e) {
@@ -856,7 +918,7 @@ namespace Fizzik {
         }
 
         /*
-         * Creates a new FizzikSprite with width, height at that path,
+         * Creates a new FizzikSprite with width, height,
          * while also setting it to the current working sprite.
          */
         public void createNewSprite(int w, int h) {
@@ -895,9 +957,12 @@ namespace Fizzik {
 
                 if (workingSprite) {
                     workingSprite.destroyTextures();
+                    pixelIntents.Clear();
                 }
 
                 workingSprite = spr;
+
+                calibratePixelBufferDrawRate();
 
                 performAssetSave();
             }
@@ -909,17 +974,50 @@ namespace Fizzik {
         public void openExistingSprite(string path) {
             if (workingSprite) {
                 workingSprite.destroyTextures();
+                pixelIntents.Clear();
             }
 
             workingSprite = AssetDatabase.LoadAssetAtPath<FizzikSprite>(path);
 
             workingSprite.reconstructTextures();
 
+            calibratePixelBufferDrawRate();
+
             performAssetSave();
         }
 
         /*
-         * Method that can be called to set changesSaved to false, should be called anytime a change occurs to underlying sprite data
+         * Sets the rate at which pixel draw intents are drawn in batches,
+         * taking into account the area of the image. 
+         */
+        protected void calibratePixelBufferDrawRate() {
+            if (workingSprite) {
+                int area = workingSprite.imgWidth * workingSprite.imgHeight;
+
+                int lo = pixelBufferLow;
+                int hi = pixelBufferHigh;
+
+                float lorate = pixelBufferLowRate;
+                float hirate = pixelBufferHighRate;
+
+                float rate = 0f;
+                if (area < lo) {
+                    rate = lorate;
+                }
+                else if (area < hi) {
+                    float ratio = ((float) area - (float) lo) / ((float) hi - (float) lo);
+                    rate = lorate + (ratio * (hirate - lorate));
+                }
+                else {
+                    rate = hirate;
+                }
+
+                pixelBufferDrawRate = rate;
+            }
+        }
+
+        /*
+         * Flags the workingSprite to be dirty inside of Unity, so that it is written to disk when unity is closed.
          */
         protected void makeDirty() {
             if (workingSprite != null) {
