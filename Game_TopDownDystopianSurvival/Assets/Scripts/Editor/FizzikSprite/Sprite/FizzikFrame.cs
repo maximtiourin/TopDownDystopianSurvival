@@ -12,7 +12,7 @@ namespace Fizzik {
     public class FizzikFrame {
         public int imgWidth;
         public int imgHeight;
-
+        
         public List<FizzikLayer> layers;
 
         public Texture2D texture;

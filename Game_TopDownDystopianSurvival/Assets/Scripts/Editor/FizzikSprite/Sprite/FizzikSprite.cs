@@ -15,7 +15,7 @@ namespace Fizzik {
     public class FizzikSprite : ScriptableObject {
         public int imgWidth;
         public int imgHeight;
-
+        
         public List<FizzikFrame> frames;
 
         const int RECENT_COLORS_SIZE = 10;

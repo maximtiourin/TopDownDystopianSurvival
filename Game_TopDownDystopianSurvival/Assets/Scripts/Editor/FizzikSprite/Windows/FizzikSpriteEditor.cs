@@ -27,7 +27,7 @@ namespace Fizzik {
         const int pixelBufferLow = 65536; //256 x 256 :: all areas less than this amount will be subjected to LowRate
         const int pixelBufferHigh  = 262144; //512 x 512 :: all areas greater than equal to Low and less than High will be subjected to linear rate between LowRate and HighRate, greater than equal to High will be subjected to HighRate
         const float pixelBufferLowRate = .05f; //aim to draw buffered intents 20 times a second
-        const float pixelBufferHighRate = .5f; //aim to draw buffered intents 1 times a second
+        const float pixelBufferHighRate = .2f; //aim to draw buffered intents 5 times a second
         protected float pixelBufferDrawRate = pixelBufferLowRate; //In seconds, can be dynamically scaled to be larger the larger the image is, to prevent losing most stroke data
         protected double nextBufferDraw = 0; //When the next buffer of pixel intents should be drawn in time since unity editor was started
 
@@ -51,7 +51,6 @@ namespace Fizzik {
         //Main editor variables
         const bool DEVELOPER = true; //Used to flag debugging via the developer window
         protected Rect previousEditorRect; //Rect used to keep track of any window resizing changes as a result of not having built-in OnResize events in unity
-        protected bool changesSaved = true; //Flag used in the determining of the current save state of the workingSprite
         protected bool mouseInsideEditor = false; //Flag used to keep track of the mouse being inside/outside the editor
         protected bool shouldDisplayObjectPicker = false; //Flag used to spawn an object picker object inside of the main OnGUI() method, doing so outside of it won't fire events
         protected int displayedObjectPickerId = 0; //The id to assign to the next object picker that should be displayed;
@@ -121,7 +120,11 @@ namespace Fizzik {
                 if (pixelIntents.Count > 0) {
                     HashSet<FizzikLayer> drawnLayers = new HashSet<FizzikLayer>();
                     HashSet<FizzikFrame> drawnFrames = new HashSet<FizzikFrame>();
+                    
+                    Undo.undoRedoPerformed -= undoRedoWorkingSprite;
+                    Undo.undoRedoPerformed += undoRedoWorkingSprite;
 
+                    Undo.RecordObject(workingSprite, "DrawPixel");
                     foreach (DrawPixelIntent intent in pixelIntents) {
                         FizzikSprite sprite = workingSprite;
                         FizzikFrame frame = intent.frame;
@@ -134,12 +137,15 @@ namespace Fizzik {
 
                             switch (intent.type) {
                                 case (DrawPixelIntent.IntentType.Normal):
+                                    Undo.RecordObject(workingSprite, "DrawPixel.Normal");
                                     layer.setPixelTopLeftOrigin(px, py, color, true);
                                     break;
                                 case (DrawPixelIntent.IntentType.Interpolate):
+                                    Undo.RecordObject(workingSprite, "DrawPixel.Interpolate");
                                     layer.setPixelsInterpolateTopLeftOrigin(intent.prevx, intent.prevy, px, py, color, true);
                                     break;
                                 default:
+                                    Undo.RecordObject(workingSprite, "DrawPixel.Normal");
                                     layer.setPixelTopLeftOrigin(px, py, color, true);
                                     break;
                             } 
@@ -161,6 +167,8 @@ namespace Fizzik {
                     }
 
                     pixelIntents.Clear();
+
+                    Undo.CollapseUndoOperations(Undo.GetCurrentGroup()); //Group all Records, the group name will be the most recent record
 
                     makeDirty();
                 }
@@ -292,6 +300,7 @@ namespace Fizzik {
 
                 //Save working sprite
                 if (workingSprite) {
+                    makeDirty();
                     performAssetSave();
                     workingSprite.destroyTextures();
                 }
@@ -852,17 +861,6 @@ namespace Fizzik {
 
                 menu.AddSeparator("");
 
-                if (changesSaved) {
-                    menu.AddDisabledItem(new GUIContent("Save"));
-                }
-                else {
-                    menu.AddItem(new GUIContent("Save"), false, () => {
-                        performAssetSave();
-                    });
-                }
-
-                menu.AddSeparator("");
-
                 menu.AddItem(new GUIContent("Export Frames to PNGs"), false, () => {
 
                 });
@@ -871,7 +869,27 @@ namespace Fizzik {
             }
             btnWidthOffset += menuButtonStyle.fixedWidth;
             if (GUILayout.Button(new GUIContent("Edit", ""), menuButtonStyle)) {
+                Rect btnRect = GUILayoutUtility.GetLastRect();
+                btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
 
+                string currentUndoGroupName = Undo.GetCurrentGroupName();
+
+                GenericMenu menu = new GenericMenu();
+                if (currentUndoGroupName == "") {
+                    menu.AddDisabledItem(new GUIContent("Undo %Z"));
+                }
+                else {
+                    menu.AddItem(new GUIContent("Undo " + currentUndoGroupName + " %Z"), false, () => {
+                        Undo.PerformUndo();
+                    });
+                }
+
+                //For some reason Unity doesn't provide a simple way to get the undoStack, or even the redo groupName, so I can't mimic the unity editor undo/redo menu items 100%...
+                menu.AddItem(new GUIContent("Redo %Y"), false, () => {
+                    Undo.PerformRedo();
+                });
+
+                menu.DropDown(btnRect);
             }
             btnWidthOffset += menuButtonStyle.fixedWidth;
             if (GUILayout.Button(new GUIContent("View", ""), menuButtonStyle)) {
@@ -962,10 +980,14 @@ namespace Fizzik {
 
                 workingSprite = spr;
 
+                makeDirty();
+
                 calibratePixelBufferDrawRate();
 
                 performAssetSave();
             }
+
+            Focus();
         }
 
         /*
@@ -981,9 +1003,28 @@ namespace Fizzik {
 
             workingSprite.reconstructTextures();
 
+            makeDirty();
+
             calibratePixelBufferDrawRate();
 
             performAssetSave();
+
+            Focus();
+        }
+
+        /*
+         * Fulls records the working sprite object, and collapses every record into one undo/redo with the 'operation' label
+         */
+        protected void recordWorkingSprite(string operation) {
+            if (workingSprite) {
+                Undo.RecordObject(workingSprite, operation);
+            }
+        }
+
+        protected void undoRedoWorkingSprite() {
+            if (workingSprite) {
+                workingSprite.reconstructTextures();
+            }
         }
 
         /*
