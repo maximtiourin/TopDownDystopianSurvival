@@ -94,7 +94,7 @@ namespace Fizzik {
             }
 
             //Set window constraints
-            editor.minSize = new Vector2(editor.calculateMinWidth(), editor.calculateMinHeight());
+            editor.recalculateMinSize();
             editor.previousEditorRect = editor.position;
 
             //Mouse flags
@@ -185,6 +185,9 @@ namespace Fizzik {
             if (!hasInit) {
                 Init();
             }
+
+            //Figure out minSizes :: before window resizing events are thrown
+            recalculateMinSize();
 
             //Developer Window DEBUG
             if (DEVELOPER && devWindow.isEnabled()) {
@@ -279,6 +282,7 @@ namespace Fizzik {
                 BeginWindows();
                 foreach (FizzikSubWindow sw in subwindows) {
                     if (sw.isEnabled()) {
+                        sw.resizeWindow();
                         sw.clampInsideRect(new Rect(0f, dss_Toolbar_height, position.size.x, position.size.y - dss_Toolbar_height));
                         sw.setCurrentRect(GUI.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
                     }
@@ -447,32 +451,6 @@ namespace Fizzik {
         }
 
         /*
-         * Calculates the minWidth allowable for this window by comparing various widths used for styling things such as subwindows, etc.
-         */
-        protected float calculateMinWidth() {
-            float minWidth = 0;
-
-            foreach (FizzikSubWindow sw in subwindows) {
-                minWidth = Mathf.Max(minWidth, sw.getCurrentRect().size.x);
-            }
-
-            return minWidth;
-        }
-
-        /*
-         * Calculates the minHeight allowable for this window by comparing various heights used for styling things such as subwindows, etc.
-         */
-        protected float calculateMinHeight() {
-            float minHeight = dss_Toolbar_height;
-
-            foreach (FizzikSubWindow sw in subwindows) {
-                minHeight = Mathf.Max(minHeight, dss_Toolbar_height + sw.getCurrentRect().size.y);
-            }
-
-            return minHeight;
-        }
-
-        /*
          * Zooms a rect based on a scalar, taking into account EditorWindow OnGUI begingroup matrix workaround
          */
         protected Rect beginZoomArea(float zoomScale, Rect area) {
@@ -534,16 +512,6 @@ namespace Fizzik {
 
                 lastToolDragContinuous = false;
             }
-            if ((dragContext == SUBWINDOW) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
-                canvasDragAlreadyStarted = false;
-                dragContext = NONE;
-                lastToolDragContinuous = false;
-            }
-            if ((dragContext == SUBWINDOW) && canvasDragAlreadyStarted && !mouseInsideEditor) {
-                canvasDragAlreadyStarted = false;
-                dragContext = NONE;
-                lastToolDragContinuous = false;
-            }
 
             //Handle zooming from mousewheel scrolling event
             if ((subwindowUnderMouse == null) && e.type == EventType.ScrollWheel) {
@@ -573,14 +541,6 @@ namespace Fizzik {
                 //canvasZoomOrigin = floorVec(canvasZoomOrigin);
 
                 canvasDragAlreadyStarted = true;
-
-                e.Use();
-            }
-            //Mouse pan drag was released, reset drag flag
-            if ((dragContext == MOUSE_MIDDLE) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_MIDDLE) {
-                canvasDragAlreadyStarted = false;
-                dragContext = NONE;
-                lastToolDragContinuous = false;
 
                 e.Use();
             }
@@ -702,7 +662,35 @@ namespace Fizzik {
                 }
             }
 
-            //Mouse debug drag related pixel drawing was released, reset drag flag
+            /*
+             * -----------------------------------------------------------------------------------------------------------------
+             * Reset drag context flags, must be done at the end of all mouse related input so no funny business happens
+             * -----------------------------------------------------------------------------------------------------------------
+             * -----------------------------------------------------------------------------------------------------------------
+             */
+            
+            //Subwindow dragging
+            if ((dragContext == SUBWINDOW) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
+                canvasDragAlreadyStarted = false;
+                dragContext = NONE;
+                lastToolDragContinuous = false;
+            }
+            if ((dragContext == SUBWINDOW) && canvasDragAlreadyStarted && !mouseInsideEditor) {
+                canvasDragAlreadyStarted = false;
+                dragContext = NONE;
+                lastToolDragContinuous = false;
+            }
+
+            //Mouse Pan dragging
+            if ((dragContext == MOUSE_MIDDLE) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_MIDDLE) {
+                canvasDragAlreadyStarted = false;
+                dragContext = NONE;
+                lastToolDragContinuous = false;
+
+                e.Use();
+            }
+
+            //Mouse draw dragging
             if ((dragContext == MOUSE_LEFT) && canvasDragAlreadyStarted && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
                 canvasDragAlreadyStarted = false;
                 dragContext = NONE;
@@ -1055,6 +1043,23 @@ namespace Fizzik {
 
                 pixelBufferDrawRate = rate;
             }
+        }
+
+        /*
+         * Recaculates the minimum size the editor window can be scaled to in order to allow for all of the various offsets and subwindows at their current dimensions
+         */
+        public void recalculateMinSize() {
+            float minWidth = 0;
+            float minHeight = dss_Toolbar_height;
+
+            foreach (FizzikSubWindow sw in subwindows) {
+                if (sw.isEnabled()) {
+                    minWidth = Mathf.Max(minWidth, sw.getCurrentRect().size.x);
+                    minHeight = Mathf.Max(minHeight, dss_Toolbar_height + sw.getCurrentRect().size.y);
+                }
+            }
+
+            minSize = new Vector2(minWidth, minHeight);
         }
 
         /*

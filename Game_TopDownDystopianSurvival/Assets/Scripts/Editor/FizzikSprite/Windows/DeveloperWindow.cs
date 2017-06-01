@@ -2,29 +2,26 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using System;
 
 namespace Fizzik {
     public class DeveloperWindow : FizzikSubWindow {
-        public static string defaultTitle = "Developer";
+        const string defaultTitle = "Developer";
+
+        const bool RESIZABLE = true;
 
         const int MOUSE_DRAG_BUTTON = 0;
-
-        private FizzikSpriteEditor editor;
-        private Vector2 relativePos = Vector2.zero;
-        private Rect currentRect;
-        private int windowID;
-        private bool enabled = false;
         
         private Vector2 scrollPosition;
         private string output = "";
 
-        public DeveloperWindow(FizzikSpriteEditor editor) {
-            this.editor = editor;
+        public DeveloperWindow(FizzikSpriteEditor editor) : base(editor) {
 
-            loadUserSettings();
         }
 
-        public void handleGUI(int windowID) {
+        public override void handleGUI(int windowID) {
+            Event e = Event.current;
+
             scrollPosition = GUILayout.BeginScrollView(scrollPosition);
 
             GUIStyle outputStyle = new GUIStyle(GUI.skin.label);
@@ -34,9 +31,13 @@ namespace Fizzik {
 
             GUILayout.EndScrollView();
 
-            if (Event.current.button == MOUSE_DRAG_BUTTON) {
-                GUI.DragWindow();
-            }
+            //Draw debug rects
+            //GUIUtility.DrawRectangle(headerRect, Color.blue);
+            GUIUtility.DrawRectangle(resizeRect, Color.red, false);
+
+            handleCursors();
+
+            dragWindow();
         }
 
         /*
@@ -85,67 +86,57 @@ namespace Fizzik {
             return output;
         }
 
-        public void destroy() {
-
-        }
-
-        /*
-         * Restricts this currentRect to fall inside of the other rect
-         */
-        public void clampInsideRect(Rect other) {
-            float w = currentRect.size.x;
-            float h = currentRect.size.y;
-
-            currentRect.x = Mathf.Max(other.x, Mathf.Min(currentRect.x, other.x + other.size.x - w));
-            currentRect.y = Mathf.Max(other.y, Mathf.Min(currentRect.y, other.y + other.size.y - h));
-
-            //Fixed size
-            //currentRect.size = new Vector2(w, h);
-        }
-
-        public Rect getCurrentRect() {
-            return currentRect;
-        }
-
-        public void setCurrentRect(Rect rect) {
-            currentRect = rect;
-        }
-
-        public int getWindowID() {
-            return windowID;
-        }
-
-        public void setWindowID(int windowID) {
-            this.windowID = windowID;
-        }
-
-        public string getTitle() {
+        public override string getTitle() {
             return defaultTitle;
         }
 
-        public GUIStyle getGUIStyle(GUISkin skin) {
+        public override int getMouseDragButton() {
+            return MOUSE_DRAG_BUTTON;
+        }
+
+        public override bool isResizable() {
+            return RESIZABLE;
+        }
+
+        public override Rect getDefaultRect() {
+            return dss_DeveloperWindow_rect;
+        }
+
+        public override Rect getMinRect() {
+            return dss_DeveloperWindow_minrect;
+        }
+
+        public override GUIStyle getGUIStyle(GUISkin skin) {
             GUIStyle guiStyle = new GUIStyle(skin.window);
 
             //Fixed size
-            guiStyle.fixedWidth = dss_DeveloperWindow_rect.size.x;
-            guiStyle.fixedHeight = dss_DeveloperWindow_rect.size.y;
+            //guiStyle.fixedWidth = dss_DeveloperWindow_rect.size.x;
+            //guiStyle.fixedHeight = dss_DeveloperWindow_rect.size.y;
 
             return guiStyle;
         }
 
-        public void loadUserSettings() {
-            currentRect = new Rect(
-                EditorPrefs.GetFloat(txt_editorprefs_rectx, dss_DeveloperWindow_rect.x),
-                EditorPrefs.GetFloat(txt_editorprefs_recty, dss_DeveloperWindow_rect.y),
-                dss_DeveloperWindow_rect.size.x,
-                dss_DeveloperWindow_rect.size.y
-                //EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_DeveloperWindow_rect.size.x),
-                //EditorPrefs.GetFloat(txt_editorprefs_recth, dss_DeveloperWindow_rect.size.y)
-            );
+        public override void loadUserSettings() {
+            if (isResizable()) {
+                setCurrentRect(new Rect(
+                    EditorPrefs.GetFloat(txt_editorprefs_rectx, dss_DeveloperWindow_rect.x),
+                    EditorPrefs.GetFloat(txt_editorprefs_recty, dss_DeveloperWindow_rect.y),
+                    EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_DeveloperWindow_rect.size.x),
+                    EditorPrefs.GetFloat(txt_editorprefs_recth, dss_DeveloperWindow_rect.size.y)
+                ));
+            }
+            else {
+                setCurrentRect(new Rect(
+                    EditorPrefs.GetFloat(txt_editorprefs_rectx, dss_DeveloperWindow_rect.x),
+                    EditorPrefs.GetFloat(txt_editorprefs_recty, dss_DeveloperWindow_rect.y),
+                    dss_DeveloperWindow_rect.size.x, //Fixed default size
+                    dss_DeveloperWindow_rect.size.y //Fixed default size
+                ));
+            }
             enabled = EditorPrefs.GetBool(txt_editorprefs_enabled, enabled);
         }
 
-        public void saveUserSettings() {
+        public override void saveUserSettings() {
             EditorPrefs.SetFloat(txt_editorprefs_rectx, currentRect.x);
             EditorPrefs.SetFloat(txt_editorprefs_recty, currentRect.y);
             EditorPrefs.SetFloat(txt_editorprefs_rectw, currentRect.size.x);
@@ -153,26 +144,11 @@ namespace Fizzik {
             EditorPrefs.SetBool(txt_editorprefs_enabled, enabled);
         }
 
-        public void toggleEnabled() {
-            enabled = !enabled;
-        }
-
-        public bool isEnabled() {
-            return enabled;
-        }
-
-        public Vector2 getRelativeWindowPosition() {
-            return relativePos;
-        }
-
-        public void setRelativeWindowPosition(Vector2 relpos) {
-            relativePos = relpos;
-        }
-
         /*-------------------------- 
          * Default sizing structures
          ---------------------------*/
         public static Rect dss_DeveloperWindow_rect = new Rect(0, 0, 400, 200);
+        public static Rect dss_DeveloperWindow_minrect = new Rect(0, 0, 100, 40);
 
         /*-------------------------- 
          * Text constants
