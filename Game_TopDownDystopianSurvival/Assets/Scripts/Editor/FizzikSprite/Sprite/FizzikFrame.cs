@@ -64,10 +64,10 @@ namespace Fizzik {
 
                 foreach (FizzikLayer layer in visibleLayers) {
                     if (pixels == null) {
-                        pixels = FizzikLayer.blend(imgWidth, imgHeight, layer.pixels, layer.opacity, layer.pixels, layer.opacity, layer.blendMode);
+                        pixels = FizzikLayer.blend(layer.pixels, layer.opacity, layer.pixels, layer.opacity, layer.blendMode);
                     }
                     else {
-                        pixels = FizzikLayer.blend(imgWidth, imgHeight, pixels, 1f, layer.pixels, layer.opacity, layer.blendMode);
+                        pixels = FizzikLayer.blend(pixels, 1f, layer.pixels, layer.opacity, layer.blendMode);
                     }
                 }
 

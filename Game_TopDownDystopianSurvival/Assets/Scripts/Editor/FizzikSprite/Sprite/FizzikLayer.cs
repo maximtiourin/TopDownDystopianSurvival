@@ -245,37 +245,35 @@ namespace Fizzik {
             }
         }
 
-        public static Color[] blend(int width, int height, Color[] lowerPixels, float lowerOpacity, Color[] upperPixels, float upperOpacity, BlendMode blendMode) {
+        public static Color[] blend(Color[] lowerPixels, float lowerOpacity, Color[] upperPixels, float upperOpacity, BlendMode blendMode) {
             switch (blendMode) {
                 case BlendMode.NORMAL:
-                    return blendNormal(width, height, lowerPixels, lowerOpacity, upperPixels, upperOpacity);
+                    return blendNormal(lowerPixels, lowerOpacity, upperPixels, upperOpacity);
                 default:
-                    return blendNormal(width, height, lowerPixels, lowerOpacity, upperPixels, upperOpacity);
+                    return blendNormal(lowerPixels, lowerOpacity, upperPixels, upperOpacity);
             }
         }
 
         /*
          * Blend two pixel data arrays together using the NORMAL blend mode
          */
-        private static Color[] blendNormal(int width, int height, Color[] lowerPixels, float lowerOpacity, Color[] upperPixels, float upperOpacity) {
-            Color[] res = new Color[width * height];
+        private static Color[] blendNormal(Color[] lowerPixels, float lowerOpacity, Color[] upperPixels, float upperOpacity) {
+            Color[] res = new Color[upperPixels.Length];
 
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    Color lowerPixel = lowerPixels[y * width + x];
-                    Color upperPixel = upperPixels[y * width + x];
+            for (int p = 0; p < upperPixels.Length; p++) {
+                Color lowerPixel = lowerPixels[p];
+                Color upperPixel = upperPixels[p];
 
-                    float lowerAlpha = lowerPixel.a * lowerOpacity;
-                    float upperAlpha = upperPixel.a * upperOpacity;
-                    float resAlpha = upperAlpha + (lowerAlpha * (1f - upperAlpha));
+                float lowerAlpha = lowerPixel.a * lowerOpacity;
+                float upperAlpha = upperPixel.a * upperOpacity;
+                float resAlpha = upperAlpha + (lowerAlpha * (1f - upperAlpha));
 
-                    Color resPixel = new Color(((lowerPixel.r * lowerAlpha * (1f - upperAlpha)) + (upperPixel.r * upperAlpha)) / resAlpha,
-                                               ((lowerPixel.g * lowerAlpha * (1f - upperAlpha)) + (upperPixel.g * upperAlpha)) / resAlpha,
-                                               ((lowerPixel.b * lowerAlpha * (1f - upperAlpha)) + (upperPixel.b * upperAlpha)) / resAlpha,
-                                               resAlpha);
+                Color resPixel = new Color(((lowerPixel.r * lowerAlpha * (1f - upperAlpha)) + (upperPixel.r * upperAlpha)) / resAlpha,
+                                            ((lowerPixel.g * lowerAlpha * (1f - upperAlpha)) + (upperPixel.g * upperAlpha)) / resAlpha,
+                                            ((lowerPixel.b * lowerAlpha * (1f - upperAlpha)) + (upperPixel.b * upperAlpha)) / resAlpha,
+                                            resAlpha);
 
-                    res[y * width + x] = resPixel;
-                }
+                res[p] = resPixel;
             }
 
             return res;
