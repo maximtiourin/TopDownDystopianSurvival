@@ -25,9 +25,9 @@ namespace Fizzik {
         //Pixel buffering
         protected List<DrawPixelIntent> pixelIntents; //Buffered pixel drawing 
         const int pixelBufferLow = 65536; //256 x 256 :: all areas less than this amount will be subjected to LowRate
-        const int pixelBufferHigh  = 262144; //512 x 512 :: all areas greater than equal to Low and less than High will be subjected to linear rate between LowRate and HighRate, greater than equal to High will be subjected to HighRate
+        const int pixelBufferHigh  = 589824; //768 x 768 :: all areas greater than equal to Low and less than High will be subjected to linear rate between LowRate and HighRate, greater than equal to High will be subjected to HighRate
         const float pixelBufferLowRate = .05f; //aim to draw buffered intents 20 times a second
-        const float pixelBufferHighRate = .2f; //aim to draw buffered intents 5 times a second
+        const float pixelBufferHighRate = .45f; //aim to draw buffered intents 3.07 times a second
         protected float pixelBufferDrawRate = pixelBufferLowRate; //In seconds, can be dynamically scaled to be larger the larger the image is, to prevent losing most stroke data
         protected double nextBufferDraw = 0; //When the next buffer of pixel intents should be drawn in time since unity editor was started
 
@@ -742,74 +742,77 @@ namespace Fizzik {
                 devWindow.appendLine("}");
             }
 
-            //Canvas content
-            beginZoomArea(canvasZoom, canvasZoomArea);
+            //Do Painting only on repaints
+            if (e.type == EventType.Repaint) {
+                //Canvas content
+                beginZoomArea(canvasZoom, canvasZoomArea);
 
-            //Draw workingSprite Transparency Helper background image (use tex coords to tile the texture without scaling it more than its default size)
-            float texcoordw = workingSprite.imgWidth / Mathf.Max(4f, workingSprite.imgWidth % tex_editorimagebg.width); //Makes nice tiling both for factor of 2, as well as non-factor
-            float texcoordh = workingSprite.imgHeight / Mathf.Max(4f, workingSprite.imgHeight % tex_editorimagebg.height);
-            GUI.DrawTextureWithTexCoords(boxRect, tex_editorimagebg, new Rect(0, 0, texcoordw, texcoordh));
+                //Draw workingSprite Transparency Helper background image (use tex coords to tile the texture without scaling it more than its default size)
+                float texcoordw = workingSprite.imgWidth / Mathf.Max(4f, workingSprite.imgWidth % tex_editorimagebg.width); //Makes nice tiling both for factor of 2, as well as non-factor
+                float texcoordh = workingSprite.imgHeight / Mathf.Max(4f, workingSprite.imgHeight % tex_editorimagebg.height);
+                GUI.DrawTextureWithTexCoords(boxRect, tex_editorimagebg, new Rect(0, 0, texcoordw, texcoordh));
 
-            //Draw workingSprite image
-            GUI.DrawTexture(boxRect, workingSprite.getTextureFromFrame(0));
+                //Draw workingSprite image
+                GUI.DrawTexture(boxRect, workingSprite.getTextureFromFrame(0));
 
-            endZoomArea();
+                endZoomArea();
 
-            /*
-             * BEGIN SINGLE-PIXEL OVERLAYS
-             */
+                /*
+                 * BEGIN SINGLE-PIXEL OVERLAYS
+                 */
 
-            //Draw Grid Overlay
-            if (gridOverlayEnabled) {
-                Texture2D gridCellTexture = new Texture2D(1, 1);
-                gridCellTexture.SetPixel(0, 0, gridOverlayColor);
-                gridCellTexture.filterMode = FilterMode.Point;
-                gridCellTexture.Apply();
+                //Draw Grid Overlay
+                if (gridOverlayEnabled) {
+                    Texture2D gridCellTexture = new Texture2D(1, 1);
+                    gridCellTexture.SetPixel(0, 0, gridOverlayColor);
+                    gridCellTexture.filterMode = FilterMode.Point;
+                    gridCellTexture.Apply();
 
-                float cellw = gridOverlayCellWidth * canvasZoom;
-                float cellh = gridOverlayCellHeight * canvasZoom;
+                    float cellw = gridOverlayCellWidth * canvasZoom;
+                    float cellh = gridOverlayCellHeight * canvasZoom;
 
-                //Draw rows
-                for (float row = sgrect.yMin; row < sgrect.yMax; row += cellh) {
-                    GUI.DrawTextureWithTexCoords(new Rect(sgrect.x, row, sgw, 1), gridCellTexture, new Rect(0, 0, 1, 1));
+                    //Draw rows
+                    for (float row = sgrect.yMin; row < sgrect.yMax; row += cellh) {
+                        GUI.DrawTextureWithTexCoords(new Rect(sgrect.x, row, sgw, 1), gridCellTexture, new Rect(0, 0, 1, 1));
+                    }
+                    GUI.DrawTextureWithTexCoords(new Rect(sgrect.x, sgrect.yMax, sgw, 1), gridCellTexture, new Rect(0, 0, 1, 1)); //Draw closing line (in case height isn't factor of 2)
+
+                    //Draw columns
+                    for (float col = sgrect.xMin; col < sgrect.xMax; col += cellw) {
+                        GUI.DrawTextureWithTexCoords(new Rect(col, sgrect.y, 1, sgh), gridCellTexture, new Rect(0, 0, 1, 1));
+                    }
+                    GUI.DrawTextureWithTexCoords(new Rect(sgrect.xMax, sgrect.y, 1, sgh), gridCellTexture, new Rect(0, 0, 1, 1));
+
+                    DestroyImmediate(gridCellTexture);
                 }
-                GUI.DrawTextureWithTexCoords(new Rect(sgrect.x, sgrect.yMax, sgw, 1), gridCellTexture, new Rect(0, 0, 1, 1)); //Draw closing line (in case height isn't factor of 2)
 
-                //Draw columns
-                for (float col = sgrect.xMin; col < sgrect.xMax; col += cellw) {
-                    GUI.DrawTextureWithTexCoords(new Rect(col, sgrect.y, 1, sgh), gridCellTexture, new Rect(0, 0, 1, 1));
+                //Draw Pixel Hover Overlay ; TODO - Add color selection options, possibly expand to be different per tool type selected
+                Texture2D pixelHoverTexture = new Texture2D(1, 1);
+                pixelHoverTexture.SetPixel(0, 0, Color.red);
+                pixelHoverTexture.filterMode = FilterMode.Point;
+                pixelHoverTexture.Apply();
+
+                if (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh) {
+                    //Mouse is inside of image, display pixel overlay
+                    float sideLength = canvasZoom;
+
+                    float px = boxmousex * sideLength;
+                    float py = boxmousey * sideLength;
+
+                    Rect prect = new Rect(sgrect.x + px, sgrect.y + py, sgrect.width, sgrect.height);
+
+                    GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y, sideLength, 1), pixelHoverTexture, new Rect(0, 0, 1, 1));
+                    GUI.DrawTextureWithTexCoords(new Rect(prect.x + sideLength, prect.y, 1, sideLength), pixelHoverTexture, new Rect(0, 0, 1, 1));
+                    GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y + sideLength, sideLength, 1), pixelHoverTexture, new Rect(0, 0, 1, 1));
+                    GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y, 1, sideLength), pixelHoverTexture, new Rect(0, 0, 1, 1));
                 }
-                GUI.DrawTextureWithTexCoords(new Rect(sgrect.xMax, sgrect.y, 1, sgh), gridCellTexture, new Rect(0, 0, 1, 1));
 
-                DestroyImmediate(gridCellTexture);
+                DestroyImmediate(pixelHoverTexture);
+
+                /*
+                 * END SINGLE-PIXEL OVERLAYS
+                 */
             }
-
-            //Draw Pixel Hover Overlay ; TODO - Add color selection options, possibly expand to be different per tool type selected
-            Texture2D pixelHoverTexture = new Texture2D(1, 1);
-            pixelHoverTexture.SetPixel(0, 0, Color.red);
-            pixelHoverTexture.filterMode = FilterMode.Point;
-            pixelHoverTexture.Apply();
-
-            if (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh) {
-                //Mouse is inside of image, display pixel overlay
-                float sideLength = canvasZoom;
-
-                float px = boxmousex * sideLength;
-                float py = boxmousey * sideLength;
-
-                Rect prect = new Rect(sgrect.x + px, sgrect.y + py, sgrect.width, sgrect.height);
-
-                GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y, sideLength, 1), pixelHoverTexture, new Rect(0, 0, 1, 1));
-                GUI.DrawTextureWithTexCoords(new Rect(prect.x + sideLength, prect.y, 1, sideLength), pixelHoverTexture, new Rect(0, 0, 1, 1));
-                GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y + sideLength, sideLength, 1), pixelHoverTexture, new Rect(0, 0, 1, 1));
-                GUI.DrawTextureWithTexCoords(new Rect(prect.x, prect.y, 1, sideLength), pixelHoverTexture, new Rect(0, 0, 1, 1));
-            }
-
-            DestroyImmediate(pixelHoverTexture);
-
-            /*
-             * END SINGLE-PIXEL OVERLAYS
-             */
 
             editor.Repaint();
         }
@@ -1148,9 +1151,6 @@ namespace Fizzik {
 
         const string txt_LastUsedSaveDir_editorprefs_pathkey = "Fizzik.lastUsedSaveDir";
         const string txt_LastUsedSaveDir_editorprefs_pathdefault = "Assets/";
-
-        const string txt_WorkingSprite_editorprefs_pathkey = "Fizzik.workingSpritePath";
-        const string txt_WorkingSprite_editorprefs_pathnull = "";
 
         const string txt_CreateNewSprite_btn_title = "Create New FizzikSprite";
         const string txt_CreateNewSprite_btn_ttip = "Creates a new FizzikSprite asset. FizzikSprite is an asset that encompasses one or many 2D Textures and can also store special layer and animation based data on a per-frame basis. The frames themselves that can later be exported to common image formats if needed.";

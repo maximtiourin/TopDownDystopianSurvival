@@ -245,23 +245,25 @@ namespace Fizzik {
             }
         }
 
-        public static Texture2D blend(Texture2D lowerTex, float lowerOpacity, Texture2D upperTex, float upperOpacity, BlendMode blendMode) {
+        public static Color[] blend(int width, int height, Color[] lowerPixels, float lowerOpacity, Color[] upperPixels, float upperOpacity, BlendMode blendMode) {
             switch (blendMode) {
                 case BlendMode.NORMAL:
-                    return blendNormal(lowerTex, lowerOpacity, upperTex, upperOpacity);
+                    return blendNormal(width, height, lowerPixels, lowerOpacity, upperPixels, upperOpacity);
                 default:
-                    return blendNormal(lowerTex, lowerOpacity, upperTex, upperOpacity);
+                    return blendNormal(width, height, lowerPixels, lowerOpacity, upperPixels, upperOpacity);
             }
         }
 
-        private static Texture2D blendNormal(Texture2D lowerTex, float lowerOpacity, Texture2D upperTex, float upperOpacity) {
-            Texture2D res = new Texture2D(upperTex.width, upperTex.height);
-            res.filterMode = upperTex.filterMode;
+        /*
+         * Blend two pixel data arrays together using the NORMAL blend mode
+         */
+        private static Color[] blendNormal(int width, int height, Color[] lowerPixels, float lowerOpacity, Color[] upperPixels, float upperOpacity) {
+            Color[] res = new Color[width * height];
 
-            for (int x = 0; x < upperTex.width; x++) {
-                for (int y = 0; y < upperTex.height; y++) {
-                    Color lowerPixel = lowerTex.GetPixel(x, y);
-                    Color upperPixel = upperTex.GetPixel(x, y);
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    Color lowerPixel = lowerPixels[y * width + x];
+                    Color upperPixel = upperPixels[y * width + x];
 
                     float lowerAlpha = lowerPixel.a * lowerOpacity;
                     float upperAlpha = upperPixel.a * upperOpacity;
@@ -272,11 +274,9 @@ namespace Fizzik {
                                                ((lowerPixel.b * lowerAlpha * (1f - upperAlpha)) + (upperPixel.b * upperAlpha)) / resAlpha,
                                                resAlpha);
 
-                    res.SetPixel(x, y, resPixel);
+                    res[y * width + x] = resPixel;
                 }
             }
-
-            res.Apply();
 
             return res;
         }

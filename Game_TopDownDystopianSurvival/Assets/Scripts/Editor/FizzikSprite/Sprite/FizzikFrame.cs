@@ -60,16 +60,21 @@ namespace Fizzik {
             texture = null;
 
             if (visibleLayers.Count > 0) {
+                Color[] pixels = null;
+
                 foreach (FizzikLayer layer in visibleLayers) {
-                    //if (layer.texture) {
-                        if (texture == null) {
-                            texture = FizzikLayer.blend(layer.texture, layer.opacity, layer.texture, layer.opacity, layer.blendMode);
-                        }
-                        else {
-                            texture = FizzikLayer.blend(texture, 1f, layer.texture, layer.opacity, layer.blendMode);
-                        }
-                    //}
+                    if (pixels == null) {
+                        pixels = FizzikLayer.blend(imgWidth, imgHeight, layer.pixels, layer.opacity, layer.pixels, layer.opacity, layer.blendMode);
+                    }
+                    else {
+                        pixels = FizzikLayer.blend(imgWidth, imgHeight, pixels, 1f, layer.pixels, layer.opacity, layer.blendMode);
+                    }
                 }
+
+                texture = new Texture2D(imgWidth, imgHeight);
+                texture.SetPixels(pixels);
+                texture.filterMode = FilterMode.Point;
+                texture.Apply();
             }
             else {
                 texture = new Texture2D(imgWidth, imgHeight);

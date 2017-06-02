@@ -26,8 +26,19 @@ namespace Fizzik {
 
             EditorGUILayout.BeginVertical();
 
-            pw = Mathf.Max(1, EditorGUILayout.IntField("Pixel Width", pw));
-            ph = Mathf.Max(1, EditorGUILayout.IntField("Pixel Height", ph));
+            //Select image dimensions
+            pw = Mathf.Max(1, EditorGUILayout.IntField("Image Width", pw));
+            ph = Mathf.Max(1, EditorGUILayout.IntField("Image Height", ph));
+
+            //Image Size caveat blurb
+            if (pw * ph > 256 * 256) {
+                GUIStyle blurbStyle = new GUIStyle(GUI.skin.label);
+                blurbStyle.wordWrap = true;
+                blurbStyle.fontSize = 9;
+                blurbStyle.normal.textColor = ColorUtility.darker(Color.red);
+
+                GUILayout.Label(txt_blurb_sizecaveats, blurbStyle);
+            }
 
             GUILayout.Space(32f);
 
@@ -44,6 +55,11 @@ namespace Fizzik {
         /*-------------------------- 
          * Default sizing structures
          ---------------------------*/
-        public static Rect dss_CreateNewSpriteOptions_rect = new Rect(0, 0, 240, 100);
+        public static Rect dss_CreateNewSpriteOptions_rect = new Rect(0, 0, 420, 400); //width::240, height :: 100
+
+        /*-------------------------- 
+         * Text constants
+         ---------------------------*/
+        const string txt_blurb_sizecaveats = "Due to Texture2D limitations, image sizes over 256 x 256 will increasingly suffer image-editing related performance degradations. For a smooth image-editing experience with image sizes of 512x512 and larger, it is better to use an external image editor, and then import the images back in for animating.";
     }
 }

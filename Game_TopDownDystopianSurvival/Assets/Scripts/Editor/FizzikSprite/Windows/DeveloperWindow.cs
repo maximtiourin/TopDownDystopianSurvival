@@ -31,9 +31,6 @@ namespace Fizzik {
 
             GUILayout.EndScrollView();
 
-            //Draw debug rects
-            //GUIUtility.DrawRectangle(headerRect, Color.blue);
-            GUIUtility.DrawRectangle(resizeRect, Color.red, false);
 
             handleCursors();
 
