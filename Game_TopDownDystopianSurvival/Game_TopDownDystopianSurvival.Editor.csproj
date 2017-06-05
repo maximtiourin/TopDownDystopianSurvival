@@ -131,6 +131,7 @@
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\ColorUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\DrawPixelIntent.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\GUIUtility.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\GenericDataStructures\UniqueStack.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\RectUtility.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\ResizeEvent.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Utility\Texture2DUtility.cs" />

@@ -12,6 +12,9 @@ namespace Fizzik {
      * @author Maxim Tiourin
      */
     public class FizzikSpriteEditor : EditorWindow {
+        public static readonly string EditorPrefs_Prefix = "Fizzik.";
+
+
         public static FizzikSpriteEditor editor;
 
         protected List<FizzikSubWindow> subwindows;
@@ -54,6 +57,7 @@ namespace Fizzik {
         protected bool mouseInsideEditor = false; //Flag used to keep track of the mouse being inside/outside the editor
         protected bool shouldDisplayObjectPicker = false; //Flag used to spawn an object picker object inside of the main OnGUI() method, doing so outside of it won't fire events
         protected int displayedObjectPickerId = 0; //The id to assign to the next object picker that should be displayed;
+        protected UniqueStack<int> subwindowsDrawOrder; //A unique stack containing the window ids in the reverse order they were drawn. The id at the bottom of the stack is most likely to have focus.
         protected FizzikSubWindow subwindowUnderMouse;
 
         protected bool hasInit = false;
@@ -69,6 +73,8 @@ namespace Fizzik {
             //Instantiate structures
             editor.subwindows = new List<FizzikSubWindow>();
             editor.menuwindows = new List<FizzikMenuOptionsWindow>();
+
+            editor.subwindowsDrawOrder = new UniqueStack<int>();
 
             //Pixel buffering
             editor.pixelIntents = new List<DrawPixelIntent>();
@@ -199,12 +205,9 @@ namespace Fizzik {
 
             //Save Subwindow position relative to editor boundaries (to be later used in relative reposition on resize)
             //Also use this loop to keep track of the currently hovered over subwindow (so that events down the line can react accordingly)
-            //The way that sw's are looped through and drawn, due to 'bringwindowtofront' inside of the loop, the subwindowUnderMouse will always be the window at the forefront.
             subwindowUnderMouse = null;
+            List<FizzikSubWindow> windowsUnderMouse = new List<FizzikSubWindow>();
             foreach (FizzikSubWindow sw in subwindows) {
-                //Layer windows in order of their creation always, to aid in tracking the correct forefront window under mouse
-                GUI.BringWindowToFront(sw.getWindowID());
-
                 //Relative positioning
                 Vector2 curpos = new Vector2(sw.getCurrentRect().x, sw.getCurrentRect().y);
                 Vector2 prevsize = new Vector2(previousEditorRect.size.x, previousEditorRect.size.y);
@@ -213,7 +216,37 @@ namespace Fizzik {
 
                 //Track window under mouse
                 if (sw.isEnabled() && sw.getCurrentRect().Contains(e.mousePosition)) {
-                    subwindowUnderMouse = sw;
+                    windowsUnderMouse.Add(sw);
+                }
+            }
+
+            //Look at all subwindows under the mouse, and try to find the one that currently has focus, otherwise return the most recently pushed one
+            if (windowsUnderMouse.Count > 0) {
+                if (windowsUnderMouse.Count > 1) {
+                    bool found = false;
+                    //Try to find the next best thing
+                    int[] drawOrder = subwindowsDrawOrder.toArray(subwindowsDrawOrder.size());
+                    for (int i = drawOrder.Length - 1; i >= 0; i--) {
+                        if (!found) {
+                            foreach (FizzikSubWindow sw in windowsUnderMouse) {
+                                if (drawOrder[i] == sw.getWindowID()) {
+                                    found = true;
+                                    subwindowUnderMouse = sw;
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        subwindowUnderMouse = windowsUnderMouse[0];
+                    }
+                }
+                else {
+                    subwindowUnderMouse = windowsUnderMouse[0];
                 }
             }
 
@@ -225,6 +258,9 @@ namespace Fizzik {
                 else {
                     devWindow.appendLine("Subwindow under mouse: <none>");
                 }
+
+                devWindow.appendLine("# of Subwindows under mouse: " + windowsUnderMouse.Count);
+                devWindow.appendLine("Subwindow that likely has focus: " + subwindowsDrawOrder.reversePeek());
 
                 devWindow.appendLine("Pixel Buffer Draw Rate: " + pixelBufferDrawRate);
             }
@@ -284,7 +320,7 @@ namespace Fizzik {
                     if (sw.isEnabled()) {
                         sw.resizeWindow();
                         sw.clampInsideRect(new Rect(0f, dss_Toolbar_height, position.size.x, position.size.y - dss_Toolbar_height));
-                        sw.setCurrentRect(GUI.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
+                        sw.setCurrentRect(GUILayout.Window(sw.getWindowID(), sw.getCurrentRect(), sw.handleGUI, sw.getTitle(), sw.getGUIStyle(GUI.skin)));
                     }
                 }
                 EndWindows();
@@ -361,6 +397,19 @@ namespace Fizzik {
 
         protected void offerDrawPixelIntent(DrawPixelIntent.IntentType type, FizzikFrame frame, FizzikLayer layer, int prevpx, int prevpy, int px, int py, Color color) {
             pixelIntents.Add(new DrawPixelIntent(type, frame, layer, prevpx, prevpy, px, py, color));
+        }
+
+        /*
+         * Sets the currently focussed subwindow. Subwindows have their handleGui called by unity in the reverse order they should be drawn.
+         * As a result, the first handleGui call is also the currently focussed subwindow, IF THERE EVEN IS a currently focussed subwindow, so track that info.
+         * This should be called inside of subwindow handlegui calls
+         */
+        public void setCurrentMostLikelyFocusedSubwindow(int windowId) {
+            subwindowsDrawOrder.push(windowId);
+        }
+
+        public FizzikSubWindow getMostLikelyFocusedSubwindow() {
+            return subwindowUnderMouse;
         }
 
         /*
@@ -842,8 +891,6 @@ namespace Fizzik {
                     options.Init(this);
                     menuwindows.Add(options);
                     options.showOptions();
-
-                    //createNewSprite();
                 });
                 menu.AddItem(new GUIContent("Open Existing Sprite"), false, () => {
                     displayedObjectPickerId = cid_OpenExistingSprite;

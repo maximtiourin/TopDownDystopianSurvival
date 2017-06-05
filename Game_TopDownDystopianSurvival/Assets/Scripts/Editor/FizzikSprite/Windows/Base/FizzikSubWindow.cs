@@ -6,27 +6,39 @@ using UnityEditor;
 namespace Fizzik {
     public abstract class FizzikSubWindow {
         const int HEADER_HEIGHT = 15;
-        const int RESIZE_WIDTH = 8;
-        const int RESIZE_HEIGHT = 8;
+        const int RESIZE_WIDTH = 4;
+        const int RESIZE_HEIGHT = 4;
 
         protected FizzikSpriteEditor editor;
         protected Vector2 relativePos = Vector2.zero;
         protected Rect currentRect; //The bounds of the window
         protected Rect headerRect; //The bounds of the window header
-        protected Rect resizeRect; //The bounds of the area where window resizing activates
         protected int windowID;
         protected bool enabled = true;
 
+        protected enum ResizeRects {
+            TopLeft, Top, TopRight, Left, Right, BotLeft, Bot, BotRight
+        }
+        protected Rect[] resizeRects; //The bounds of the area where window resizing activates
+        protected ResizeRects resizeAnchor; //The resize rect that is being compared to the mouse position
         protected bool resizing;
         protected Vector2 resizeMouseOffset;
 
         public FizzikSubWindow(FizzikSpriteEditor editor) {
             this.editor = editor;
 
+            setCurrentRect(getDefaultRect()); //Initialization of currentRect that sets up all structures, in case loadUserSettings implementation is blank.
+
             loadUserSettings();
         }
 
-        public abstract void handleGUI(int windowID);
+        /*
+         * Handles drawing the gui and updating any important state information, child classes should always call this base method in their implementation at the
+         * beginning of that implementation
+         */
+        public virtual void handleGUI(int windowID) {
+            editor.setCurrentMostLikelyFocusedSubwindow(windowID);
+        }
 
         protected void dragWindow() {
             Event e = Event.current;
@@ -40,22 +52,55 @@ namespace Fizzik {
          * This should be called by the sprite editor, so that drags can properly be tracked even when the mouse leaves the extends of the subwindow (do to gui matrixes and clipping)
          */
         public void resizeWindow() {
-            if (isResizable()) {
+            if (isResizable() && (editor.getMostLikelyFocusedSubwindow() == this || resizing)) {
                 Event e = Event.current;
 
                 int mouseButton = getMouseDragButton();
 
-                Rect c = currentRect;
-
-                Rect editorRelativeRect = new Rect(c.x + resizeRect.x, c.y + resizeRect.y, resizeRect.width, resizeRect.height);
+                Rect c = currentRect;   
 
                 //Start resizing
                 if (!resizing && e.type == EventType.MouseDrag && e.button == mouseButton) {
-                    if (editorRelativeRect.Contains(e.mousePosition)) {
-                        Vector2 m = e.mousePosition;
+                    for (int i = 0; i < resizeRects.Length; i++) {
+                        Rect resizeRect = resizeRects[i];
 
-                        resizing = true;
-                        resizeMouseOffset = new Vector2(c.x + c.width - m.x, c.y + c.height - m.y);
+                        Rect editorRelativeRect = new Rect(c.x + resizeRect.x, c.y + resizeRect.y, resizeRect.width, resizeRect.height);
+
+                        if (editorRelativeRect.Contains(e.mousePosition)) {
+                            Vector2 m = e.mousePosition;
+
+                            resizeAnchor = (ResizeRects) i;
+                            resizing = true;
+
+                            switch (resizeAnchor) {
+                                case ResizeRects.TopLeft:
+                                    resizeMouseOffset = new Vector2(c.x - m.x, c.y - m.y);
+                                    break;
+                                case ResizeRects.Top:
+                                    resizeMouseOffset = new Vector2(0, c.y - m.y);
+                                    break;
+                                case ResizeRects.TopRight:
+                                    resizeMouseOffset = new Vector2(c.x + c.width - m.x, c.y - m.y);
+                                    break;
+                                case ResizeRects.Left:
+                                    resizeMouseOffset = new Vector2(c.x - m.x, 0);
+                                    break;
+                                case ResizeRects.Right:
+                                    resizeMouseOffset = new Vector2(c.x + c.width - m.x, 0);
+                                    break;
+                                case ResizeRects.BotLeft:
+                                    resizeMouseOffset = new Vector2(c.x - m.x, c.y + c.height - m.y);
+                                    break;
+                                case ResizeRects.Bot:
+                                    resizeMouseOffset = new Vector2(0, c.y + c.height - m.y);
+                                    break;
+                                case ResizeRects.BotRight:
+                                    resizeMouseOffset = new Vector2(c.x + c.width - m.x, c.y + c.height - m.y);
+                                    break;
+                            }
+
+                            break;
+                        }
                     }
                 }
 
@@ -69,9 +114,41 @@ namespace Fizzik {
                     Vector2 m = e.mousePosition;
                     Vector2 off = resizeMouseOffset;
 
-                    Rect newRect = new Rect(c.x, c.y, Mathf.Max(4 * RESIZE_WIDTH, m.x - c.x + off.x), Mathf.Max((4 * RESIZE_HEIGHT) + HEADER_HEIGHT, m.y - c.y + off.y));
+                    float minWidth = 4 * RESIZE_WIDTH;
+                    float minHeight = (4 * RESIZE_HEIGHT) + HEADER_HEIGHT;
 
-                    setCurrentRect(newRect);
+                    float cx_max = c.x + c.width; //max x coordinate of currentRect
+                    float cy_max = c.y + c.height; //max y coordinate of currentRect
+
+                    float mdx = m.x + off.x; //current mousex offset by offset drag position
+                    float mdy = m.y + off.y; //current mousey offset by offset drag position
+
+                    switch (resizeAnchor) {
+                        case ResizeRects.TopLeft:
+                            setCurrentRect(new Rect(mdx, mdy, Mathf.Max(minWidth, cx_max - mdx), Mathf.Max(minHeight, cy_max - mdy)));
+                            break;
+                        case ResizeRects.Top:
+                            setCurrentRect(new Rect(c.x, mdy, c.width, Mathf.Max(minHeight, cy_max - mdy)));
+                            break;
+                        case ResizeRects.TopRight:
+                            setCurrentRect(new Rect(c.x, mdy, Mathf.Max(minWidth, mdx - c.x), Mathf.Max(minHeight, cy_max - mdy)));
+                            break;
+                        case ResizeRects.Left:
+                            setCurrentRect(new Rect(mdx, c.y, Mathf.Max(minWidth, cx_max - mdx), c.height));
+                            break;
+                        case ResizeRects.Right:
+                            setCurrentRect(new Rect(c.x, c.y, Mathf.Max(minWidth, mdx - c.x), c.height));
+                            break;
+                        case ResizeRects.BotLeft:
+                            setCurrentRect(new Rect(mdx, c.y, Mathf.Max(minWidth, cx_max - mdx), Mathf.Max(minHeight, mdy - c.y)));
+                            break;
+                        case ResizeRects.Bot:
+                            setCurrentRect(new Rect(c.x, c.y, c.width, Mathf.Max(minHeight, mdy - c.y)));
+                            break;
+                        case ResizeRects.BotRight:
+                            setCurrentRect(new Rect(c.x, c.y, Mathf.Max(minWidth, mdx - c.x), Mathf.Max(minHeight, mdy - c.y)));
+                            break;
+                    }
                 }
             }
             else {
@@ -83,7 +160,17 @@ namespace Fizzik {
          * Changes mouse cursor accordingly, built-in base handles resize cursors
          */
         protected virtual void handleCursors() {
-            EditorGUIUtility.AddCursorRect(resizeRect, MouseCursor.ResizeUpLeft);
+            //Resize cursors
+            if (isResizable() && (editor.getMostLikelyFocusedSubwindow() == this || resizing)) {
+                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.TopLeft], MouseCursor.ResizeUpLeft);
+                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Top], MouseCursor.ResizeVertical);
+                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.TopRight], MouseCursor.ResizeUpRight);
+                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Left], MouseCursor.ResizeHorizontal);
+                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Right], MouseCursor.ResizeHorizontal);
+                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.BotLeft], MouseCursor.ResizeUpRight);
+                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Bot], MouseCursor.ResizeVertical);
+                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.BotRight], MouseCursor.ResizeUpLeft);
+            }
         }
 
         /*
@@ -93,11 +180,33 @@ namespace Fizzik {
         protected void recalculateRects() {
             Rect c = currentRect;
 
-            //Header
-            headerRect = new Rect(0, 0, c.width, HEADER_HEIGHT);
-
             //Resize
-            resizeRect = new Rect(c.width - RESIZE_WIDTH, c.height - RESIZE_HEIGHT, RESIZE_WIDTH, RESIZE_HEIGHT);
+            int w = RESIZE_WIDTH;
+            int h = RESIZE_HEIGHT;
+            float offx = c.width - w;
+            float offy = c.height - h;
+            float sw = c.width - (2 * w);
+            float sh = c.height - (2 * h);
+
+            if (isResizable()) {
+                resizeRects = new Rect[8];
+                resizeRects[(int) ResizeRects.TopLeft] = new Rect(0, 0, w, h);
+                resizeRects[(int) ResizeRects.Top] = new Rect(w, 0, sw, h);
+                resizeRects[(int) ResizeRects.TopRight] = new Rect(offx, 0, w, h);
+                resizeRects[(int) ResizeRects.Left] = new Rect(0, h, w, sh);
+                resizeRects[(int) ResizeRects.Right] = new Rect(offx, h, w, sh);
+                resizeRects[(int) ResizeRects.BotLeft] = new Rect(0, offy, w, h);
+                resizeRects[(int) ResizeRects.Bot] = new Rect(w, offy, sw, h);
+                resizeRects[(int) ResizeRects.BotRight] = new Rect(offx, offy, w, h);
+            }
+
+            //Header
+            if (isResizable()) {
+                headerRect = new Rect(w, h, sw, HEADER_HEIGHT - h);
+            }
+            else {
+                headerRect = new Rect(0, 0, c.width, HEADER_HEIGHT);
+            }
         }
 
         /*
@@ -164,13 +273,56 @@ namespace Fizzik {
             return getDefaultRect();
         }
 
+        /*
+         * Should return the variant name string of a subwindow that is expected to be unique from any other subwindow variants
+         * Example, if a subwindow is called "Color Palette", a good identifier would be "colorPalette"
+         */
+        public virtual string getSubWindowStringIdentifier() {
+            return "unnamed";
+        }
+
         public abstract GUIStyle getGUIStyle(GUISkin skin);
 
-        //This is called by the outside parent editorwindow that creates the subwindows
-        public abstract void saveUserSettings();
+        //This is called by the outside parent editorwindow that creates the subwindows, override and call base method to add more save functionality
+        public virtual void saveUserSettings() {
+            string prefix = FizzikSpriteEditor.EditorPrefs_Prefix;
+            string id = getSubWindowStringIdentifier();
 
-        //This should be called inside of the subwindow's constructor if it wants to use any saved settings
-        public abstract void loadUserSettings();
+            //Save current rect
+            EditorPrefs.SetFloat(prefix + id + _rectx, currentRect.x);
+            EditorPrefs.SetFloat(prefix + id + _recty, currentRect.y);
+            EditorPrefs.SetFloat(prefix + id + _rectw, currentRect.size.x);
+            EditorPrefs.SetFloat(prefix + id + _recth, currentRect.size.y);
+            EditorPrefs.SetBool(prefix + id + _enabled, enabled);
+        }
+
+        /* 
+         * This is called inside of the subwindow's base constructor to load any saved settings, 
+         * If it is modifying currentRect, it must use setCurrentRect to maintain window functionality
+         * Override and call base method to add more load functionality
+         */
+        public virtual void loadUserSettings() {
+            string prefix = FizzikSpriteEditor.EditorPrefs_Prefix;
+            string id = getSubWindowStringIdentifier();
+
+            if (isResizable()) {
+                setCurrentRect(new Rect(
+                    EditorPrefs.GetFloat(prefix + id + _rectx, getDefaultRect().x),
+                    EditorPrefs.GetFloat(prefix + id + _recty, getDefaultRect().y),
+                    EditorPrefs.GetFloat(prefix + id + _rectw, getDefaultRect().size.x),
+                    EditorPrefs.GetFloat(prefix + id + _recth, getDefaultRect().size.y)
+                ));
+            }
+            else {
+                setCurrentRect(new Rect(
+                    EditorPrefs.GetFloat(prefix + id + _rectx, getDefaultRect().x),
+                    EditorPrefs.GetFloat(prefix + id + _recty, getDefaultRect().y),
+                    getDefaultRect().size.x, //Fixed default size
+                    getDefaultRect().size.y //Fixed default size
+                ));
+            }
+            enabled = EditorPrefs.GetBool(prefix + id + _enabled, enabled);
+        }
 
         //Negate the value that would be returned by isEnabled()
         public void toggleEnabled() {
@@ -193,5 +345,14 @@ namespace Fizzik {
         }
 
         public virtual void destroy() { } //Should cleanup any memory such as textures
+
+        /*-------------------------- 
+         * Editorprefs constants
+         ---------------------------*/
+        const string _rectx = "_rectx";
+        const string _recty = "_recty";
+        const string _rectw = "_rectw";
+        const string _recth = "_recth";
+        const string _enabled = "_enabled";
     }
 }

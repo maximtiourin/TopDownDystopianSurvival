@@ -81,6 +81,8 @@ namespace Fizzik {
         }
 
         public override void handleGUI(int windowID) {
+            base.handleGUI(windowID);
+
             Color prevColor = GUI.color;
 
             FizzikSprite sprite = editor.getWorkingSprite();
@@ -191,6 +193,10 @@ namespace Fizzik {
             return dss_ColorPalette_rect;
         }
 
+        public override string getSubWindowStringIdentifier() {
+            return txt_editorprefs_identifier;
+        }
+
         public override GUIStyle getGUIStyle(GUISkin skin) {
             GUIStyle guiStyle = new GUIStyle(skin.window);
 
@@ -199,34 +205,6 @@ namespace Fizzik {
             guiStyle.fixedHeight = dss_ColorPalette_rect.size.y;
 
             return guiStyle;
-        }
-
-        public override void loadUserSettings() {
-            if (isResizable()) {
-                setCurrentRect(new Rect(
-                    EditorPrefs.GetFloat(txt_editorprefs_rectx, dss_ColorPalette_rect.x),
-                    EditorPrefs.GetFloat(txt_editorprefs_recty, dss_ColorPalette_rect.y),
-                    EditorPrefs.GetFloat(txt_editorprefs_rectw, dss_ColorPalette_rect.size.x),
-                    EditorPrefs.GetFloat(txt_editorprefs_recth, dss_ColorPalette_rect.size.y)
-                ));
-            }
-            else {
-                setCurrentRect(new Rect(
-                    EditorPrefs.GetFloat(txt_editorprefs_rectx, dss_ColorPalette_rect.x),
-                    EditorPrefs.GetFloat(txt_editorprefs_recty, dss_ColorPalette_rect.y),
-                    dss_ColorPalette_rect.size.x, //Fixed default size
-                    dss_ColorPalette_rect.size.y //Fixed default size
-                ));
-            }
-            enabled = EditorPrefs.GetBool(txt_editorprefs_enabled, enabled);
-        }
-
-        public override void saveUserSettings() {
-            EditorPrefs.SetFloat(txt_editorprefs_rectx, currentRect.x);
-            EditorPrefs.SetFloat(txt_editorprefs_recty, currentRect.y);
-            EditorPrefs.SetFloat(txt_editorprefs_rectw, currentRect.size.x);
-            EditorPrefs.SetFloat(txt_editorprefs_recth, currentRect.size.y);
-            EditorPrefs.SetBool(txt_editorprefs_enabled, enabled);
         }
 
         /*-------------------------- 
@@ -243,10 +221,6 @@ namespace Fizzik {
         /*-------------------------- 
          * Text constants
          ---------------------------*/
-        const string txt_editorprefs_rectx = "Fizzik.colorPalette_rectx";
-        const string txt_editorprefs_recty = "Fizzik.colorPalette_recty";
-        const string txt_editorprefs_rectw = "Fizzik.colorPalette_rectw";
-        const string txt_editorprefs_recth = "Fizzik.colorPalette_recth";
-        const string txt_editorprefs_enabled = "Fizzik.colorPalette_enabled";
+        const string txt_editorprefs_identifier = "colorPalette";
     }
 }
