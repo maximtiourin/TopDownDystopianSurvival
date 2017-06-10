@@ -15,14 +15,19 @@ namespace Fizzik {
         
         public List<FizzikLayer> layers;
 
+        public int workingLayer = 0;
+
         public Texture2D texture;
 
-        public FizzikFrame(int w, int h) {
+        public string name = "Frame <Unnamed>";
+
+        public FizzikFrame(int w, int h, string name = "Frame <Unnamed>") {
             imgWidth = w;
             imgHeight = h;
+            this.name = name;
 
             layers = new List<FizzikLayer>();
-            layers.Add(new FizzikLayer(imgWidth, imgHeight)); //Add default first layer
+            layers.Add(new FizzikLayer(imgWidth, imgHeight, FizzikLayer.getDefaultLayerName(1))); //Add default first layer
 
             updateTexture(); //Texture is initialized in here
         }
@@ -84,6 +89,10 @@ namespace Fizzik {
             }
         }
 
+        public FizzikLayer getCurrentLayer() {
+            return getLayer(workingLayer);
+        }
+
         public FizzikLayer getLayer(int index) {
             if (layers.Count > 0) {
                 return layers[Mathf.Clamp(index, 0, layers.Count - 1)];
@@ -91,6 +100,34 @@ namespace Fizzik {
             else {
                 return null;
             }
+        }
+
+        /*
+         * Adds a brand new layer on top of the currently selected layer, will select the new layer after creation.
+         */
+        public FizzikLayer createNewLayer() {
+            FizzikLayer layer = new FizzikLayer(imgWidth, imgHeight, FizzikLayer.getDefaultLayerName(layers.Count + 1));
+
+            layers.Insert(workingLayer + 1, layer);
+            workingLayer = workingLayer + 1;
+
+            return layer;
+        }
+
+        /*
+         * Deletes the currently selected layer, will select the layer below it, or the layer at index 0 otherwise. Will never delete the last existing layer
+         */
+        public void deleteCurrentLayer() {
+            if (layers.Count > 1) {
+                layers.RemoveAt(workingLayer);
+                workingLayer = Mathf.Max(0, workingLayer - 1);
+
+                updateTexture();
+            }
+        }
+
+        public static string getDefaultFrameName(int index) {
+            return "Frame " + index;
         }
     }
 }

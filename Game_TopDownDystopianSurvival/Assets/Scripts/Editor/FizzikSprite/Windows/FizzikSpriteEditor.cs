@@ -22,7 +22,9 @@ namespace Fizzik {
         protected ToolPalette toolPalette;
         protected ColorPalette colorPalette;
         protected DeveloperWindow devWindow;
+        protected LayerWindow layerWindow;
 
+        //Per sprite variables
         protected FizzikSprite workingSprite; //The currently open fizziksprite
 
         //Pixel buffering
@@ -59,6 +61,7 @@ namespace Fizzik {
         protected int displayedObjectPickerId = 0; //The id to assign to the next object picker that should be displayed;
         protected UniqueStack<int> subwindowsDrawOrder; //A unique stack containing the window ids in the reverse order they were drawn. The id at the bottom of the stack is most likely to have focus.
         protected FizzikSubWindow subwindowUnderMouse;
+        protected int subwindowResizeSemaphore = 0; //Tracks how many subwindows are currently resizing, if >1 a bug has occurred and should be tracked down
 
         protected bool hasInit = false;
 
@@ -92,6 +95,10 @@ namespace Fizzik {
             editor.colorPalette = new ColorPalette(editor);
             editor.colorPalette.setWindowID(subwindowID++);
             editor.subwindows.Add(editor.colorPalette);
+
+            editor.layerWindow = new LayerWindow(editor);
+            editor.layerWindow.setWindowID(subwindowID++);
+            editor.subwindows.Add(editor.layerWindow);
 
             if (DEVELOPER) {
                 editor.devWindow = new DeveloperWindow(editor);
@@ -261,6 +268,7 @@ namespace Fizzik {
 
                 devWindow.appendLine("# of Subwindows under mouse: " + windowsUnderMouse.Count);
                 devWindow.appendLine("Subwindow that likely has focus: " + subwindowsDrawOrder.reversePeek());
+                devWindow.appendLine("Subwindow Resize Semaphore: " + subwindowResizeSemaphore);
 
                 devWindow.appendLine("Pixel Buffer Draw Rate: " + pixelBufferDrawRate);
             }
@@ -675,8 +683,8 @@ namespace Fizzik {
                 if ((dragContext == NONE) && (subwindowUnderMouse == null) && e.type == EventType.MouseUp && e.button == MOUSE_LEFT) {
                     //Check to make sure we aren't redrawing the same pixel within the same drag, make sure the pixel we try to draw is inside the box
                     if (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh) {
-                        FizzikFrame frame = workingSprite.getFrame(0);
-                        FizzikLayer layer = frame.getLayer(0);
+                        FizzikFrame frame = workingSprite.getFrame(workingSprite.workingFrame);
+                        FizzikLayer layer = frame.getLayer(frame.workingLayer);
                         offerDrawPixelIntent(DrawPixelIntent.IntentType.Normal, frame, layer, boxmousex, boxmousey, colorPalette.color);
 
                         e.Use(); //This use has to be internal, because the action becomes valid only inside of these constraints, otherwise left mouse should be freed up
@@ -689,8 +697,8 @@ namespace Fizzik {
                     //Check to make sure we aren't redrawing the same pixel within the same drag, make sure the pixel we try to draw is inside the box
                     if ((((int) lastToolDragCoordinate.x != boxmousex) || ((int) lastToolDragCoordinate.y != boxmousey))
                         && (boxmousex >= 0 && boxmousex < boxw && boxmousey >= 0 && boxmousey < boxh)) {
-                        FizzikFrame frame = workingSprite.getFrame(0);
-                        FizzikLayer layer = frame.getLayer(0);
+                        FizzikFrame frame = workingSprite.getFrame(workingSprite.workingFrame);
+                        FizzikLayer layer = frame.getLayer(frame.workingLayer);
                         
                         if (!lastToolDragContinuous) {
                             lastToolDragCoordinate = new Vector2(boxmousex, boxmousey);
@@ -802,7 +810,7 @@ namespace Fizzik {
                 GUI.DrawTextureWithTexCoords(boxRect, tex_editorimagebg, new Rect(0, 0, texcoordw, texcoordh));
 
                 //Draw workingSprite image
-                GUI.DrawTexture(boxRect, workingSprite.getTextureFromFrame(0));
+                GUI.DrawTexture(boxRect, workingSprite.getTextureFromCurrentFrame());
 
                 endZoomArea();
 
@@ -957,6 +965,9 @@ namespace Fizzik {
                 menu.AddItem(new GUIContent("Color Palette"), colorPalette.isEnabled(), () => {
                     colorPalette.toggleEnabled();
                 });
+                menu.AddItem(new GUIContent("Layers"), layerWindow.isEnabled(), () => {
+                    layerWindow.toggleEnabled();
+                });
                 menu.AddItem(new GUIContent("Tool Palette"), toolPalette.isEnabled(), () => {
                     toolPalette.toggleEnabled();
                 });
@@ -1110,6 +1121,27 @@ namespace Fizzik {
             }
 
             minSize = new Vector2(minWidth, minHeight);
+        }
+
+        /*
+         * Returns whether a subwindow should be allowed to resize itself currently (Helps prevent one drag affecting more than one subwindow)
+         */
+        public bool subwindowCanResize() {
+            return subwindowResizeSemaphore <= 0;
+        }
+
+        /*
+         * Signals that a subwindow is currently resizing
+         */
+        public void subwindowResizeAcquire() {
+            subwindowResizeSemaphore++;
+        }
+
+        /*
+         * Signals that a subwindow is done resizing
+         */
+        public void subwindowResizeRelease() {
+            subwindowResizeSemaphore--;
         }
 
         /*

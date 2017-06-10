@@ -5,9 +5,9 @@ using UnityEditor;
 
 namespace Fizzik {
     public abstract class FizzikSubWindow {
-        const int HEADER_HEIGHT = 15;
-        const int RESIZE_WIDTH = 4;
-        const int RESIZE_HEIGHT = 4;
+        protected const int HEADER_HEIGHT = 15;
+        protected const int RESIZE_WIDTH = 4;
+        protected const int RESIZE_HEIGHT = 4;
 
         protected FizzikSpriteEditor editor;
         protected Vector2 relativePos = Vector2.zero;
@@ -15,6 +15,8 @@ namespace Fizzik {
         protected Rect headerRect; //The bounds of the window header
         protected int windowID;
         protected bool enabled = true;
+
+        protected MouseCursor forcedMouseCursor; //Some actions like resizing require a mouse cursor to stay constant during the action, the cursor type is stored here.
 
         protected enum ResizeRects {
             TopLeft, Top, TopRight, Left, Right, BotLeft, Bot, BotRight
@@ -60,7 +62,7 @@ namespace Fizzik {
                 Rect c = currentRect;   
 
                 //Start resizing
-                if (!resizing && e.type == EventType.MouseDrag && e.button == mouseButton) {
+                if (editor.subwindowCanResize() && !resizing && e.type == EventType.MouseDrag && e.button == mouseButton) {
                     for (int i = 0; i < resizeRects.Length; i++) {
                         Rect resizeRect = resizeRects[i];
 
@@ -70,31 +72,41 @@ namespace Fizzik {
                             Vector2 m = e.mousePosition;
 
                             resizeAnchor = (ResizeRects) i;
+
+                            editor.subwindowResizeAcquire();
                             resizing = true;
 
                             switch (resizeAnchor) {
                                 case ResizeRects.TopLeft:
+                                    forcedMouseCursor = MouseCursor.ResizeUpLeft;
                                     resizeMouseOffset = new Vector2(c.x - m.x, c.y - m.y);
                                     break;
                                 case ResizeRects.Top:
+                                    forcedMouseCursor = MouseCursor.ResizeVertical;
                                     resizeMouseOffset = new Vector2(0, c.y - m.y);
                                     break;
                                 case ResizeRects.TopRight:
+                                    forcedMouseCursor = MouseCursor.ResizeUpRight;
                                     resizeMouseOffset = new Vector2(c.x + c.width - m.x, c.y - m.y);
                                     break;
                                 case ResizeRects.Left:
+                                    forcedMouseCursor = MouseCursor.ResizeHorizontal;
                                     resizeMouseOffset = new Vector2(c.x - m.x, 0);
                                     break;
                                 case ResizeRects.Right:
+                                    forcedMouseCursor = MouseCursor.ResizeHorizontal;
                                     resizeMouseOffset = new Vector2(c.x + c.width - m.x, 0);
                                     break;
                                 case ResizeRects.BotLeft:
+                                    forcedMouseCursor = MouseCursor.ResizeUpRight;
                                     resizeMouseOffset = new Vector2(c.x - m.x, c.y + c.height - m.y);
                                     break;
                                 case ResizeRects.Bot:
+                                    forcedMouseCursor = MouseCursor.ResizeVertical;
                                     resizeMouseOffset = new Vector2(0, c.y + c.height - m.y);
                                     break;
                                 case ResizeRects.BotRight:
+                                    forcedMouseCursor = MouseCursor.ResizeUpLeft;
                                     resizeMouseOffset = new Vector2(c.x + c.width - m.x, c.y + c.height - m.y);
                                     break;
                             }
@@ -106,6 +118,7 @@ namespace Fizzik {
 
                 //Stop resizing
                 if (resizing && e.type == EventType.MouseUp && e.button == mouseButton) {
+                    editor.subwindowResizeRelease();
                     resizing = false;
                 }
 
@@ -152,7 +165,11 @@ namespace Fizzik {
                 }
             }
             else {
-                resizing = false;
+                if (resizing) {
+                    //Must check resizing before setting to false because we use semaphores for limiting subwindow resizing to one window (semaphore instead of bool for debugging purposes)
+                    editor.subwindowResizeRelease();
+                    resizing = false;
+                }
             }
         }
 
@@ -162,14 +179,21 @@ namespace Fizzik {
         protected virtual void handleCursors() {
             //Resize cursors
             if (isResizable() && (editor.getMostLikelyFocusedSubwindow() == this || resizing)) {
-                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.TopLeft], MouseCursor.ResizeUpLeft);
-                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Top], MouseCursor.ResizeVertical);
-                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.TopRight], MouseCursor.ResizeUpRight);
-                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Left], MouseCursor.ResizeHorizontal);
-                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Right], MouseCursor.ResizeHorizontal);
-                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.BotLeft], MouseCursor.ResizeUpRight);
-                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Bot], MouseCursor.ResizeVertical);
-                EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.BotRight], MouseCursor.ResizeUpLeft);
+                if (resizing) {
+                    //Already in drag, show forced cursor for smooth display
+                    EditorGUIUtility.AddCursorRect(new Rect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity), forcedMouseCursor);
+                }
+                else {
+                    //Not in drag, show potential drag cursor
+                    EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.TopLeft], MouseCursor.ResizeUpLeft);
+                    EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Top], MouseCursor.ResizeVertical);
+                    EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.TopRight], MouseCursor.ResizeUpRight);
+                    EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Left], MouseCursor.ResizeHorizontal);
+                    EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Right], MouseCursor.ResizeHorizontal);
+                    EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.BotLeft], MouseCursor.ResizeUpRight);
+                    EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.Bot], MouseCursor.ResizeVertical);
+                    EditorGUIUtility.AddCursorRect(resizeRects[(int) ResizeRects.BotRight], MouseCursor.ResizeUpLeft);
+                }
             }
         }
 

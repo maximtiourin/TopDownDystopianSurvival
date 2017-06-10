@@ -24,6 +24,7 @@ namespace Fizzik {
         public float opacity; //Internal pixel data is independent of layer opacity. Layer opacity dictates how a frame blends layers together, as well as how the texture is drawn in preview.
         public bool visible;
         public bool locked;
+        public string name = "Layer <Unnamed>";
 
         public Texture2D texture;
 
@@ -32,9 +33,10 @@ namespace Fizzik {
         private Vector2 minBatchPoint;
         private Vector2 maxBatchPoint;
 
-        public FizzikLayer(int w, int h) {
+        public FizzikLayer(int w, int h, string name = "Layer <Unnamed>") {
             imgWidth = w;
             imgHeight = h;
+            this.name = name;
 
             pixels = Enumerable.Repeat(Color.clear, imgWidth * imgHeight).ToArray();
 
@@ -268,15 +270,29 @@ namespace Fizzik {
                 float upperAlpha = upperPixel.a * upperOpacity;
                 float resAlpha = upperAlpha + (lowerAlpha * (1f - upperAlpha));
 
-                Color resPixel = new Color(((lowerPixel.r * lowerAlpha * (1f - upperAlpha)) + (upperPixel.r * upperAlpha)) / resAlpha,
-                                            ((lowerPixel.g * lowerAlpha * (1f - upperAlpha)) + (upperPixel.g * upperAlpha)) / resAlpha,
-                                            ((lowerPixel.b * lowerAlpha * (1f - upperAlpha)) + (upperPixel.b * upperAlpha)) / resAlpha,
-                                            resAlpha);
+                Color resPixel;
+                if (resAlpha == 0f) {
+                    //Prevent divide by zero, color will be clear anyway
+                    resPixel = Color.clear;
+                }
+                else {
+                    resPixel = new Color(
+                        ((upperPixel.r * upperAlpha) + ((lowerPixel.r * lowerAlpha) * (1f - upperAlpha))) / resAlpha,
+                        ((upperPixel.g * upperAlpha) + ((lowerPixel.g * lowerAlpha) * (1f - upperAlpha))) / resAlpha,
+                        ((upperPixel.b * upperAlpha) + ((lowerPixel.b * lowerAlpha) * (1f - upperAlpha))) / resAlpha,
+                        resAlpha
+                    );
+                }
+                
 
                 res[p] = resPixel;
             }
 
             return res;
+        }
+
+        public static string getDefaultLayerName(int index) {
+            return "Layer " + index;
         }
     }
 }

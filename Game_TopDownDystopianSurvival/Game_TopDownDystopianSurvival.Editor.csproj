@@ -142,6 +142,7 @@
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\DeveloperWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\FizzikSpriteEditor.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\GridOverlayOptions.cs" />
+    <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\LayerWindow.cs" />
     <Compile Include="Assets\Scripts\Editor\FizzikSprite\Windows\ToolPalette.cs" />
   </ItemGroup>
   <ItemGroup>

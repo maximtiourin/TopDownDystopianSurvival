@@ -18,6 +18,8 @@ namespace Fizzik {
         
         public List<FizzikFrame> frames;
 
+        public int workingFrame = 0;
+
         const int RECENT_COLORS_SIZE = 10;
         public Color[] recentColors; //Tracks recently selected colors when this sprite was edited
 
@@ -29,7 +31,7 @@ namespace Fizzik {
                 imgHeight = h;
 
                 frames = new List<FizzikFrame>();
-                frames.Add(new FizzikFrame(imgWidth, imgHeight)); //Add the default first frame
+                frames.Add(new FizzikFrame(imgWidth, imgHeight, FizzikFrame.getDefaultFrameName(1))); //Add the default first frame
 
                 recentColors = Enumerable.Repeat(Color.clear, RECENT_COLORS_SIZE).ToArray();
                 recentColors[0] = Color.white;
@@ -54,6 +56,17 @@ namespace Fizzik {
             }
         }
 
+        public FizzikFrame getCurrentFrame() {
+            return getFrame(workingFrame);
+        }
+
+        /*
+         * Quality of life method which calls: getCurrentFrame().getCurrentLayer()
+         */
+        public FizzikLayer getCurrentLayer() {
+            return getCurrentFrame().getCurrentLayer();
+        }
+
         public FizzikFrame getFrame(int index) {
             if (frames.Count > 0) {
                 return frames[Mathf.Clamp(index, 0, frames.Count - 1)];
@@ -72,6 +85,10 @@ namespace Fizzik {
             else {
                 return null;
             }
+        }
+
+        public Texture2D getTextureFromCurrentFrame() {
+            return getTextureFromFrame(workingFrame);
         }
 
         public void offerRecentColor(Color color) {
