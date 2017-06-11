@@ -14,6 +14,8 @@ namespace Fizzik {
         private Vector2 scrollPosition;
 
         private List<Rect> layerRects; //Layer rects that denote the entire area of the layer, to be used for click events after the layers are determined inside of handleGUI
+        private Rect layersScrollRect; //Area of the scrollview so that layer clicks must fall inside of it to count
+        private Rect layersOffsetRect; //Layers offset rect that holds all of the layers, this should be used for offseting layerRects when comparing positions
 
         private Texture2D pixel;
         private Texture2D layersBackgroundTex;
@@ -42,19 +44,21 @@ namespace Fizzik {
             layerSelectedBackgroundTex.SetPixels(Enumerable.Repeat(Color.grey, 3 * 3).ToArray());
             layerSelectedBackgroundTex.filterMode = FilterMode.Point;
             layerSelectedBackgroundTex.Apply();
+
+            //Register delegates
+            LeftMouseButtonClickTracked += checkLayerRectsForLeftMouseClick;
         }
 
         public override void handleGUI(int windowID) {
             base.handleGUI(windowID);
 
-            //Reset layerRects
-            layerRects.Clear();
+            Event e = Event.current;
 
             //Layer layouting variables
             FizzikSprite sprite = editor.getWorkingSprite();
             FizzikFrame frame = sprite.getCurrentFrame();
             List<FizzikLayer> layers = frame.layers;
-
+            
             float w = currentRect.width;
             float h = currentRect.height;
             float hw = w / 2;
@@ -86,6 +90,8 @@ namespace Fizzik {
             //Begin Layers
             GUILayout.BeginVertical(layersStyle);
 
+            layerRects.Clear();
+
             for (int i = layers.Count() - 1; i >= 0; i--) {
                 FizzikLayer layer = layers[i];
 
@@ -101,7 +107,7 @@ namespace Fizzik {
                 GUILayout.Label(layer.name, layerNameStyle);
 
                 GUILayout.EndHorizontal();
-                layerRects.Add(GUILayoutUtility.GetLastRect());
+                layerRects.Insert(0, GUILayoutUtility.GetLastRect()); //Insert to front so that the layerRects list is in correct layer order
                 //End Layer
             }
 
@@ -114,6 +120,7 @@ namespace Fizzik {
             }
 
             GUILayout.EndScrollView();
+            layersScrollRect = GUILayoutUtility.GetLastRect();
 
             //Begin Layer Overall Toolbar
             GUILayout.BeginHorizontal(layerOverallToolbarStyle, GUILayout.Height(20));
@@ -121,10 +128,14 @@ namespace Fizzik {
             GUILayout.FlexibleSpace();
 
             if (GUILayout.Button("+", GUILayout.Width(16), GUILayout.Height(16))) {
-                frame.createNewLayer();
+                if (isGUIButtonClick()) {
+                    frame.createNewLayer(sprite);
+                }
             }
             if (GUILayout.Button("-", GUILayout.Width(16), GUILayout.Height(16))) {
-                frame.deleteCurrentLayer();
+                if (isGUIButtonClick()) {
+                    frame.deleteCurrentLayer(sprite);
+                }
             }
             GUILayout.Button("a", GUILayout.Width(16), GUILayout.Height(16));
             GUILayout.Button("b", GUILayout.Width(16), GUILayout.Height(16));
@@ -133,6 +144,10 @@ namespace Fizzik {
             //End Layer Overall Toolbar
 
             GUILayout.EndVertical();
+            layersOffsetRect = GUILayoutUtility.GetLastRect();
+            //End GUI layoutting
+
+            trackFullLeftMouseClicks();
 
             handleCursors();
 
@@ -151,6 +166,24 @@ namespace Fizzik {
             }
             if (layerSelectedBackgroundTex) {
                 Object.DestroyImmediate(layerSelectedBackgroundTex);
+            }
+        }
+
+        public void checkLayerRectsForLeftMouseClick(Vector2 clickPos) {
+            FizzikSprite sprite = editor.getWorkingSprite();
+            FizzikFrame frame = sprite.getCurrentFrame();
+
+            for (int i = 0; i < layerRects.Count; i++) {
+                Rect layerRect = layerRects[i];
+
+                //Offset layerRect by its container's rect
+                Vector2 offsetVec = layerRect.position + layersOffsetRect.position - scrollPosition;
+                Rect relativeRect = new Rect(offsetVec.x, offsetVec.y, layerRect.width, layerRect.height);
+
+                if (layersScrollRect.Contains(clickPos) && relativeRect.Contains(clickPos)) {
+                    frame.workingLayer = i;
+                    return;
+                }
             }
         }
 

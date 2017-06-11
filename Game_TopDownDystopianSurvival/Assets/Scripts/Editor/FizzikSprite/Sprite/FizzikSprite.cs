@@ -18,7 +18,7 @@ namespace Fizzik {
         
         public List<FizzikFrame> frames;
 
-        public int workingFrame = 0;
+        public int workingFrame = 0; //Index of current working frame
 
         const int RECENT_COLORS_SIZE = 10;
         public Color[] recentColors; //Tracks recently selected colors when this sprite was edited

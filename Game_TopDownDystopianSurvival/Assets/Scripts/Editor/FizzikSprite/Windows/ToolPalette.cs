@@ -21,14 +21,20 @@ namespace Fizzik {
         public override void handleGUI(int windowID) {
             base.handleGUI(windowID);
 
+            Event e = Event.current;
+
             EditorGUILayout.BeginVertical();
 
             if (GUILayout.Button("Toggle Grid")) {
-                editor.toggleGridOverlay();
+                if (isGUIButtonClick()) {
+                    editor.toggleGridOverlay();
+                }
             }
 
             if (GUILayout.Button("Reset Zoom")) {
-                editor.resetCanvasZoomArea();
+                if (isGUIButtonClick()) {
+                    editor.resetCanvasZoomArea();
+                }
             }
 
             EditorGUILayout.EndVertical();

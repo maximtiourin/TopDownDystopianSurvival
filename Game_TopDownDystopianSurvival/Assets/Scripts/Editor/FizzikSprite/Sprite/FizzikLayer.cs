@@ -22,8 +22,8 @@ namespace Fizzik {
         public Color[] pixels; //2D array flattened to 1D (y * width + x)
         public BlendMode blendMode; //How the pixels of this layer should interact with layer pixels below this one
         public float opacity; //Internal pixel data is independent of layer opacity. Layer opacity dictates how a frame blends layers together, as well as how the texture is drawn in preview.
-        public bool visible;
-        public bool locked;
+        public bool visible; //Whether or not the layer is currently visible (also functions as if it were locked)
+        public bool locked; //Whether or not the layer is currently locked from editing
         public string name = "Layer <Unnamed>";
 
         public Texture2D texture;

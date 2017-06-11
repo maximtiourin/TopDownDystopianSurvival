@@ -16,6 +16,12 @@ namespace Fizzik {
         protected int windowID;
         protected bool enabled = true;
 
+        protected delegate void LeftMouseButtonClickTrackedDelegate(Vector2 clickPosition);
+        protected LeftMouseButtonClickTrackedDelegate LeftMouseButtonClickTracked; //Calls entire invocation list when a full click of the left mouse button occurs, e.mousePosition will be inside of rect (0, 0, currentRect.width, currentRect.height)
+        protected bool clickTrackMouseDown = false; //Track if the left mouse was recently pressed down
+        protected Vector2 clickTrackMouseDownPos = Vector2.zero;
+        protected float clickTrackPosDeviation = 1.4f; //How far the mouse can move between mouseDown and mouseUp to register a click
+
         protected MouseCursor forcedMouseCursor; //Some actions like resizing require a mouse cursor to stay constant during the action, the cursor type is stored here.
 
         protected enum ResizeRects {
@@ -47,6 +53,33 @@ namespace Fizzik {
 
             if (e.button == getMouseDragButton()) {
                 GUI.DragWindow(headerRect);
+            }
+        }
+
+        /*
+         * Tracks the state of any full left mouse clicks, and calls the LeftMouseButtonClickTracked delegate when a full left mouse click is registered
+         * This method should be called at the end of the handleGUI method call if the functionality is desired.
+         */
+        protected void trackFullLeftMouseClicks() {
+            Event e = Event.current;
+
+            //Track full stationary mouse clicks
+            Rect insideRect = new Rect(0, 0, currentRect.width, currentRect.height);
+            if (!clickTrackMouseDown && e.type == EventType.mouseDown) {
+                if (insideRect.Contains(e.mousePosition)) {
+                    clickTrackMouseDown = true;
+                    clickTrackMouseDownPos = e.mousePosition;
+                }
+            }
+            else if (clickTrackMouseDown && e.type == EventType.mouseUp) {
+                clickTrackMouseDown = false;
+
+                if (insideRect.Contains(e.mousePosition)) {
+                    float distSqr = Vector2.SqrMagnitude(e.mousePosition - clickTrackMouseDownPos);
+                    if (distSqr < clickTrackPosDeviation * clickTrackPosDeviation) {
+                        LeftMouseButtonClickTracked(e.mousePosition);
+                    }
+                }
             }
         }
 
@@ -283,6 +316,19 @@ namespace Fizzik {
 
         public virtual bool isResizable() {
             return false;
+        }
+
+        /*
+         * Returns true if the left mouse button was just released inside the event, this can be used as a check for button presses
+         * so that buttons execute logic only when the left mouse button is released on them.
+         *
+         * Grabs its own reference to Event.current due to the nature of how buttons process input in the unity GUI, passing an event to it
+         * might yield the incorrect event for when the button has actually been clicked, so it must be implemented this way.
+         */
+        protected virtual bool isGUIButtonClick() {
+            Event e = Event.current;
+
+            return (e.button == 0);
         }
 
         /*

@@ -83,6 +83,8 @@ namespace Fizzik {
         public override void handleGUI(int windowID) {
             base.handleGUI(windowID);
 
+            Event e = Event.current;
+
             Color prevColor = GUI.color;
 
             FizzikSprite sprite = editor.getWorkingSprite();
@@ -120,7 +122,9 @@ namespace Fizzik {
                     GUI.color = defColor;
 
                     if (GUILayout.Button("", btnstyle)) {
-                        color = defColor;
+                        if (isGUIButtonClick()) {
+                            color = defColor;
+                        }
                     }
                 }
 
@@ -140,7 +144,9 @@ namespace Fizzik {
                     GUI.color = recentColors[i];
 
                     if (GUILayout.Button("", btnstyle2)) {
-                        color = recentColors[i];
+                        if (isGUIButtonClick()) {
+                            color = recentColors[i];
+                        }
                     }
                 }
 
