@@ -17,9 +17,14 @@ namespace Fizzik {
         protected bool enabled = true;
 
         protected delegate void LeftMouseButtonClickTrackedDelegate(Vector2 clickPosition);
+        protected delegate void RightMouseButtonClickTrackedDelegate(Vector2 clickPosition);
+        protected delegate void MiddleMouseButtonClickTrackedDelegate(Vector2 clickPosition);
         protected LeftMouseButtonClickTrackedDelegate LeftMouseButtonClickTracked; //Calls entire invocation list when a full click of the left mouse button occurs, e.mousePosition will be inside of rect (0, 0, currentRect.width, currentRect.height)
-        protected bool clickTrackMouseDown = false; //Track if the left mouse was recently pressed down
-        protected Vector2 clickTrackMouseDownPos = Vector2.zero;
+        protected RightMouseButtonClickTrackedDelegate RightMouseButtonClickTracked;
+        protected MiddleMouseButtonClickTrackedDelegate MiddleMouseButtonClickTracked;
+        protected const int TRACK_MOUSEBUTTON_COUNT = 3;
+        protected bool[] clickTrackMouseDown; //Track if the left mouse was recently pressed down
+        protected Vector2[] clickTrackMouseDownPos;
         protected float clickTrackPosDeviation = 1.4f; //How far the mouse can move between mouseDown and mouseUp to register a click
 
         protected MouseCursor forcedMouseCursor; //Some actions like resizing require a mouse cursor to stay constant during the action, the cursor type is stored here.
@@ -34,6 +39,10 @@ namespace Fizzik {
 
         public FizzikSubWindow(FizzikSpriteEditor editor) {
             this.editor = editor;
+
+            //Init click tracking
+            clickTrackMouseDown = new bool[] { false, false, false };
+            clickTrackMouseDownPos = new Vector2[] { Vector2.zero, Vector2.zero, Vector2.zero };
 
             setCurrentRect(getDefaultRect()); //Initialization of currentRect that sets up all structures, in case loadUserSettings implementation is blank.
 
@@ -60,24 +69,51 @@ namespace Fizzik {
          * Tracks the state of any full left mouse clicks, and calls the LeftMouseButtonClickTracked delegate when a full left mouse click is registered
          * This method should be called at the end of the handleGUI method call if the functionality is desired.
          */
-        protected void trackFullLeftMouseClicks() {
+        protected void trackFullMouseClicks() {
             Event e = Event.current;
 
             //Track full stationary mouse clicks
+            const int MOUSE_LEFT = 0;
+            const int MOUSE_RIGHT = 1;
+            const int MOUSE_MIDDLE = 2;
             Rect insideRect = new Rect(0, 0, currentRect.width, currentRect.height);
-            if (!clickTrackMouseDown && e.type == EventType.mouseDown) {
-                if (insideRect.Contains(e.mousePosition)) {
-                    clickTrackMouseDown = true;
-                    clickTrackMouseDownPos = e.mousePosition;
-                }
-            }
-            else if (clickTrackMouseDown && e.type == EventType.mouseUp) {
-                clickTrackMouseDown = false;
+            for (int i = 0; i < TRACK_MOUSEBUTTON_COUNT; i++) {
+                if (!clickTrackMouseDown[i] && e.button == i && e.type == EventType.mouseDown) {
+                    if (insideRect.Contains(e.mousePosition)) {
+                        //Make sure no other clicks are being processed, first come first serve for context clicking
+                        bool valid = true;
+                        for (int v = 0; v < TRACK_MOUSEBUTTON_COUNT; v++) {
+                            if (v != i) {
+                                if (clickTrackMouseDown[v]) {
+                                    valid = false; //Another button was clicked first, disqualify this one
+                                }
+                            }
+                        }
 
-                if (insideRect.Contains(e.mousePosition)) {
-                    float distSqr = Vector2.SqrMagnitude(e.mousePosition - clickTrackMouseDownPos);
-                    if (distSqr < clickTrackPosDeviation * clickTrackPosDeviation) {
-                        LeftMouseButtonClickTracked(e.mousePosition);
+                        if (valid) {
+                            clickTrackMouseDown[i] = true;
+                            clickTrackMouseDownPos[i] = e.mousePosition;
+                        }
+                    }
+                }
+                else if (clickTrackMouseDown[i] && e.button == i && e.type == EventType.mouseUp) {
+                    clickTrackMouseDown[i] = false;
+
+                    if (insideRect.Contains(e.mousePosition)) {
+                        float distSqr = Vector2.SqrMagnitude(e.mousePosition - clickTrackMouseDownPos[i]);
+                        if (distSqr < clickTrackPosDeviation * clickTrackPosDeviation) {
+                            switch (i) {
+                                case MOUSE_LEFT:
+                                    LeftMouseButtonClickTracked(e.mousePosition);
+                                    break;
+                                case MOUSE_RIGHT:
+                                    RightMouseButtonClickTracked(e.mousePosition);
+                                    break;
+                                case MOUSE_MIDDLE:
+                                    MiddleMouseButtonClickTracked(e.mousePosition);
+                                    break;
+                            }
+                        }
                     }
                 }
             }
@@ -105,9 +141,6 @@ namespace Fizzik {
                             Vector2 m = e.mousePosition;
 
                             resizeAnchor = (ResizeRects) i;
-
-                            editor.subwindowResizeAcquire();
-                            resizing = true;
 
                             switch (resizeAnchor) {
                                 case ResizeRects.TopLeft:
@@ -143,6 +176,9 @@ namespace Fizzik {
                                     resizeMouseOffset = new Vector2(c.x + c.width - m.x, c.y + c.height - m.y);
                                     break;
                             }
+
+                            editor.subwindowResizeAcquire(forcedMouseCursor);
+                            resizing = true;
 
                             break;
                         }
@@ -395,7 +431,13 @@ namespace Fizzik {
         }
 
         //Negate the value that would be returned by isEnabled()
+        // Make sure to cancel resizing if it was active
         public void toggleEnabled() {
+            if (resizing) {
+                editor.subwindowResizeRelease();
+                resizing = false;
+            }
+
             enabled = !enabled;
         }
 

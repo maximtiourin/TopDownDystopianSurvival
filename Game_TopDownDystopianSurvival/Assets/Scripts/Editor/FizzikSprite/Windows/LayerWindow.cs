@@ -47,6 +47,7 @@ namespace Fizzik {
 
             //Register delegates
             LeftMouseButtonClickTracked += checkLayerRectsForLeftMouseClick;
+            RightMouseButtonClickTracked += checkLayerRectsForRightMouseClick;
         }
 
         public override void handleGUI(int windowID) {
@@ -147,7 +148,7 @@ namespace Fizzik {
             layersOffsetRect = GUILayoutUtility.GetLastRect();
             //End GUI layoutting
 
-            trackFullLeftMouseClicks();
+            trackFullMouseClicks();
 
             handleCursors();
 
@@ -181,7 +182,28 @@ namespace Fizzik {
                 Rect relativeRect = new Rect(offsetVec.x, offsetVec.y, layerRect.width, layerRect.height);
 
                 if (layersScrollRect.Contains(clickPos) && relativeRect.Contains(clickPos)) {
-                    frame.workingLayer = i;
+                    frame.setCurrentLayer(i);
+                    return;
+                }
+            }
+        }
+
+        public void checkLayerRectsForRightMouseClick(Vector2 clickPos) {
+            FizzikSprite sprite = editor.getWorkingSprite();
+            FizzikFrame frame = sprite.getCurrentFrame();
+
+            for (int i = 0; i < layerRects.Count; i++) {
+                Rect layerRect = layerRects[i];
+
+                //Offset layerRect by its container's rect
+                Vector2 offsetVec = layerRect.position + layersOffsetRect.position - scrollPosition;
+                Rect relativeRect = new Rect(offsetVec.x, offsetVec.y, layerRect.width, layerRect.height);
+
+                if (layersScrollRect.Contains(clickPos) && relativeRect.Contains(clickPos)) {
+                    //TODO Open Context Menu
+
+
+                    frame.setCurrentLayer(i); //Select the frame after opening context menu anyway
                     return;
                 }
             }

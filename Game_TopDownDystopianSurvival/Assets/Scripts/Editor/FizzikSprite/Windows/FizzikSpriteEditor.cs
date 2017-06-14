@@ -62,6 +62,8 @@ namespace Fizzik {
         protected UniqueStack<int> subwindowsDrawOrder; //A unique stack containing the window ids in the reverse order they were drawn. The id at the bottom of the stack is most likely to have focus.
         protected FizzikSubWindow subwindowUnderMouse;
         protected int subwindowResizeSemaphore = 0; //Tracks how many subwindows are currently resizing, if >1 a bug has occurred and should be tracked down
+        protected bool isForcedMouseCursor = false; //Tracks whether or not a subwindow is forcing a certain mouse cursor to appear outside of its bounds
+        protected MouseCursor forcedMouseCursor;  //The forced mouse cursor to show
 
         protected bool hasInit = false;
 
@@ -332,6 +334,11 @@ namespace Fizzik {
                     }
                 }
                 EndWindows();
+            }
+
+            //Forced Cursor
+            if (isForcedMouseCursor) {
+                EditorGUIUtility.AddCursorRect(new Rect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity), forcedMouseCursor);
             }
 
             //Set previous rect
@@ -888,96 +895,106 @@ namespace Fizzik {
             GUILayout.BeginHorizontal(toolbarStyle, GUILayout.Width(editor.position.size.x), GUILayout.Height(dss_Toolbar_height));
 
             float btnWidthOffset = 0f;
-            if (GUILayout.Button(new GUIContent("File", ""), menuButtonStyle)) {
-                Rect btnRect = GUILayoutUtility.GetLastRect();
-                btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
+            if (EditorGUILayout.DropdownButton(new GUIContent("File", ""), FocusType.Passive, menuButtonStyle)) {
+                if (isGUIButtonClick()) {
+                    Rect btnRect = GUILayoutUtility.GetLastRect();
+                    btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
 
-                GenericMenu menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Create New Sprite"), false, () => {
-                    //Display sprite creation options window
-                    CreateNewSpriteOptions options = ScriptableObject.CreateInstance<CreateNewSpriteOptions>();
-                    options.Init(this);
-                    menuwindows.Add(options);
-                    options.showOptions();
-                });
-                menu.AddItem(new GUIContent("Open Existing Sprite"), false, () => {
-                    displayedObjectPickerId = cid_OpenExistingSprite;
-                    shouldDisplayObjectPicker = true;
-                });
-
-                menu.AddSeparator("");
-
-                menu.AddItem(new GUIContent("Export Frames to PNGs"), false, () => {
-
-                });
-
-                menu.DropDown(btnRect);
-            }
-            btnWidthOffset += menuButtonStyle.fixedWidth;
-            if (GUILayout.Button(new GUIContent("Edit", ""), menuButtonStyle)) {
-                Rect btnRect = GUILayoutUtility.GetLastRect();
-                btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
-
-                string currentUndoGroupName = Undo.GetCurrentGroupName();
-
-                GenericMenu menu = new GenericMenu();
-                if (currentUndoGroupName == "") {
-                    menu.AddDisabledItem(new GUIContent("Undo %Z"));
-                }
-                else {
-                    menu.AddItem(new GUIContent("Undo " + currentUndoGroupName + " %Z"), false, () => {
-                        Undo.PerformUndo();
+                    GenericMenu menu = new GenericMenu();
+                    menu.AddItem(new GUIContent("Create New Sprite"), false, () => {
+                        //Display sprite creation options window
+                        CreateNewSpriteOptions options = ScriptableObject.CreateInstance<CreateNewSpriteOptions>();
+                        options.Init(this);
+                        menuwindows.Add(options);
+                        options.showOptions();
                     });
-                }
-
-                //For some reason Unity doesn't provide a simple way to get the undoStack, or even the redo groupName, so I can't mimic the unity editor undo/redo menu items 100%...
-                menu.AddItem(new GUIContent("Redo %Y"), false, () => {
-                    Undo.PerformRedo();
-                });
-
-                menu.DropDown(btnRect);
-            }
-            btnWidthOffset += menuButtonStyle.fixedWidth;
-            if (GUILayout.Button(new GUIContent("View", ""), menuButtonStyle)) {
-                Rect btnRect = GUILayoutUtility.GetLastRect();
-                btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
-
-                GenericMenu menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Grid Options"), false, () => {
-                    GridOverlayOptions options = ScriptableObject.CreateInstance<GridOverlayOptions>();
-                    options.Init(this);
-                    menuwindows.Add(options);
-                    options.showOptions();
-                });
-
-                menu.DropDown(btnRect);
-            }
-            btnWidthOffset += menuButtonStyle.fixedWidth;
-            if (GUILayout.Button(new GUIContent("Layer", ""), menuButtonStyle)) {
-
-            }
-            btnWidthOffset += menuButtonStyle.fixedWidth;
-            if (GUILayout.Button(new GUIContent("Window", ""), menuButtonStyle)) {
-                Rect btnRect = GUILayoutUtility.GetLastRect();
-                btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
-
-                GenericMenu menu = new GenericMenu();
-                menu.AddItem(new GUIContent("Color Palette"), colorPalette.isEnabled(), () => {
-                    colorPalette.toggleEnabled();
-                });
-                menu.AddItem(new GUIContent("Layers"), layerWindow.isEnabled(), () => {
-                    layerWindow.toggleEnabled();
-                });
-                menu.AddItem(new GUIContent("Tool Palette"), toolPalette.isEnabled(), () => {
-                    toolPalette.toggleEnabled();
-                });
-                if (DEVELOPER) {
-                    menu.AddItem(new GUIContent("Developer"), devWindow.isEnabled(), () => {
-                        devWindow.toggleEnabled();
+                    menu.AddItem(new GUIContent("Open Existing Sprite"), false, () => {
+                        displayedObjectPickerId = cid_OpenExistingSprite;
+                        shouldDisplayObjectPicker = true;
                     });
-                }
 
-                menu.DropDown(btnRect);
+                    menu.AddSeparator("");
+
+                    menu.AddItem(new GUIContent("Export Frames to PNGs"), false, () => {
+
+                    });
+
+                    menu.DropDown(btnRect);
+                }
+            }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
+            if (EditorGUILayout.DropdownButton(new GUIContent("Edit", ""), FocusType.Passive, menuButtonStyle)) {
+                if (isGUIButtonClick()) {
+                    Rect btnRect = GUILayoutUtility.GetLastRect();
+                    btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
+
+                    string currentUndoGroupName = Undo.GetCurrentGroupName();
+
+                    GenericMenu menu = new GenericMenu();
+                    if (currentUndoGroupName == "") {
+                        menu.AddDisabledItem(new GUIContent("Undo %Z"));
+                    }
+                    else {
+                        menu.AddItem(new GUIContent("Undo " + currentUndoGroupName + " %Z"), false, () => {
+                            Undo.PerformUndo();
+                        });
+                    }
+
+                    //For some reason Unity doesn't provide a simple way to get the undoStack, or even the redo groupName, so I can't mimic the unity editor undo/redo menu items 100%...
+                    menu.AddItem(new GUIContent("Redo %Y"), false, () => {
+                        Undo.PerformRedo();
+                    });
+
+                    menu.DropDown(btnRect);
+                }
+            }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
+            if (EditorGUILayout.DropdownButton(new GUIContent("View", ""), FocusType.Passive, menuButtonStyle)) {
+                if (isGUIButtonClick()) {
+                    Rect btnRect = GUILayoutUtility.GetLastRect();
+                    btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
+
+                    GenericMenu menu = new GenericMenu();
+                    menu.AddItem(new GUIContent("Grid Options"), false, () => {
+                        GridOverlayOptions options = ScriptableObject.CreateInstance<GridOverlayOptions>();
+                        options.Init(this);
+                        menuwindows.Add(options);
+                        options.showOptions();
+                    });
+
+                    menu.DropDown(btnRect);
+                }
+            }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
+            if (EditorGUILayout.DropdownButton(new GUIContent("Layer", ""), FocusType.Passive, menuButtonStyle)) {
+                if (isGUIButtonClick()) {
+
+                }
+            }
+            btnWidthOffset += menuButtonStyle.fixedWidth;
+            if (EditorGUILayout.DropdownButton(new GUIContent("Window", ""), FocusType.Passive, menuButtonStyle)) {
+                if (isGUIButtonClick()) {
+                    Rect btnRect = GUILayoutUtility.GetLastRect();
+                    btnRect = new Rect(btnRect.x + btnWidthOffset, btnRect.y + dss_Toolbar_height + toolbarMenuOffset, btnRect.size.x, btnRect.size.y);
+
+                    GenericMenu menu = new GenericMenu();
+                    menu.AddItem(new GUIContent("Color Palette"), colorPalette.isEnabled(), () => {
+                        colorPalette.toggleEnabled();
+                    });
+                    menu.AddItem(new GUIContent("Layers"), layerWindow.isEnabled(), () => {
+                        layerWindow.toggleEnabled();
+                    });
+                    menu.AddItem(new GUIContent("Tool Palette"), toolPalette.isEnabled(), () => {
+                        toolPalette.toggleEnabled();
+                    });
+                    if (DEVELOPER) {
+                        menu.AddItem(new GUIContent("Developer"), devWindow.isEnabled(), () => {
+                            devWindow.toggleEnabled();
+                        });
+                    }
+
+                    menu.DropDown(btnRect);
+                }
             }
             btnWidthOffset += menuButtonStyle.fixedWidth;
 
@@ -1107,6 +1124,19 @@ namespace Fizzik {
         }
 
         /*
+         * Returns true if the left mouse button was just released inside the event, this can be used as a check for button presses
+         * so that buttons execute logic only when the left mouse button is released on them.
+         *
+         * Grabs its own reference to Event.current due to the nature of how buttons process input in the unity GUI, passing an event to it
+         * might yield the incorrect event for when the button has actually been clicked, so it must be implemented this way.
+         */
+        protected virtual bool isGUIButtonClick() {
+            Event e = Event.current;
+
+            return (e.button == 0);
+        }
+
+        /*
          * Recaculates the minimum size the editor window can be scaled to in order to allow for all of the various offsets and subwindows at their current dimensions
          */
         public void recalculateMinSize() {
@@ -1133,7 +1163,9 @@ namespace Fizzik {
         /*
          * Signals that a subwindow is currently resizing
          */
-        public void subwindowResizeAcquire() {
+        public void subwindowResizeAcquire(MouseCursor cursor) {
+            isForcedMouseCursor = true;
+            forcedMouseCursor = cursor;
             subwindowResizeSemaphore++;
         }
 
@@ -1141,6 +1173,7 @@ namespace Fizzik {
          * Signals that a subwindow is done resizing
          */
         public void subwindowResizeRelease() {
+            isForcedMouseCursor = false;
             subwindowResizeSemaphore--;
         }
 
