@@ -17,6 +17,9 @@ namespace Fizzik {
         private Rect layersScrollRect; //Area of the scrollview so that layer clicks must fall inside of it to count
         private Rect layersOffsetRect; //Layers offset rect that holds all of the layers, this should be used for offseting layerRects when comparing positions
 
+        private bool isDraggingLayer = false; //Whether or not a layer is currently being dragged
+        private int draggedLayer; //The index of the layer that is currently being dragged
+
         private Texture2D pixel;
         private Texture2D layersBackgroundTex;
         private Texture2D layerBackgroundTex;
@@ -48,6 +51,8 @@ namespace Fizzik {
             //Register delegates
             LeftMouseButtonClickTracked += checkLayerRectsForLeftMouseClick;
             RightMouseButtonClickTracked += checkLayerRectsForRightMouseClick;
+            LeftMouseButtonDragged += handleLayerDragging;
+            LeftMouseButtonDragEnded += handleLayerDraggingEnded;
         }
 
         public override void handleGUI(int windowID) {
@@ -148,7 +153,7 @@ namespace Fizzik {
             layersOffsetRect = GUILayoutUtility.GetLastRect();
             //End GUI layoutting
 
-            trackFullMouseClicks();
+            trackMouseClicksAndDrags();
 
             handleCursors();
 
@@ -170,6 +175,39 @@ namespace Fizzik {
             }
         }
 
+        /*
+         * Handles drag initiation (threw own flags), and then drag continuation for layers
+         * TODO Temp Flesh out, one branch should initiate drags by checking flags, the other branch should
+         * handle updating context drawing and moving of layers based on drag proximity
+         */
+        public void handleLayerDragging(Vector2 dragPos) {
+            FizzikSprite sprite = editor.getWorkingSprite();
+            FizzikFrame frame = sprite.getCurrentFrame();
+            
+            for (int i = 0; i < layerRects.Count; i++) {
+                Rect layerRect = layerRects[i];
+
+                //Offset layerRect by its container's rect
+                Vector2 offsetVec = layerRect.position + layersOffsetRect.position - scrollPosition;
+                Rect relativeRect = new Rect(offsetVec.x, offsetVec.y, layerRect.width, layerRect.height);
+
+                if (layersScrollRect.Contains(dragPos) && relativeRect.Contains(dragPos)) {
+                    //Debug.Log("Layer Subwindow Dragging : " + i);
+                    frame.setCurrentLayer(i);
+                    return;
+                }
+            }
+        }
+
+        /*
+         * Handles the ending of a drag, deciding what kind of actions to take
+         * TODO Temp flesh out, should do nothing if the current drag context is invalid, should
+         * move around layers accordingly if the drag ended in a valid offset of the current layer rects
+         */
+        public void handleLayerDraggingEnded(Vector2 dragPos) {
+            //Debug.Log("Layer Subwindow Dragging Ended.");
+        }
+
         public void checkLayerRectsForLeftMouseClick(Vector2 clickPos) {
             FizzikSprite sprite = editor.getWorkingSprite();
             FizzikFrame frame = sprite.getCurrentFrame();
@@ -182,6 +220,7 @@ namespace Fizzik {
                 Rect relativeRect = new Rect(offsetVec.x, offsetVec.y, layerRect.width, layerRect.height);
 
                 if (layersScrollRect.Contains(clickPos) && relativeRect.Contains(clickPos)) {
+                    //Debug.Log("Layer Subwindow Left Clicked : " + i);
                     frame.setCurrentLayer(i);
                     return;
                 }
@@ -201,6 +240,7 @@ namespace Fizzik {
 
                 if (layersScrollRect.Contains(clickPos) && relativeRect.Contains(clickPos)) {
                     //TODO Open Context Menu
+                    //Debug.Log("Layer Subwindow Right Clicked : " + i);
 
 
                     frame.setCurrentLayer(i); //Select the frame after opening context menu anyway

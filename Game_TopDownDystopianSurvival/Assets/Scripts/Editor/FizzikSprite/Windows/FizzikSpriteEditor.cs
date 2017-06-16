@@ -606,6 +606,9 @@ namespace Fizzik {
 
                 canvasDragAlreadyStarted = true;
 
+                isForcedMouseCursor = true;
+                forcedMouseCursor = MouseCursor.Pan;
+
                 e.Use();
             }
 
@@ -750,6 +753,8 @@ namespace Fizzik {
                 canvasDragAlreadyStarted = false;
                 dragContext = NONE;
                 lastToolDragContinuous = false;
+
+                isForcedMouseCursor = false;
 
                 e.Use();
             }

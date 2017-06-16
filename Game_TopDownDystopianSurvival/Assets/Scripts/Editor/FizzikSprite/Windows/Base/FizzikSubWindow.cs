@@ -16,16 +16,22 @@ namespace Fizzik {
         protected int windowID;
         protected bool enabled = true;
 
-        protected delegate void LeftMouseButtonClickTrackedDelegate(Vector2 clickPosition);
-        protected delegate void RightMouseButtonClickTrackedDelegate(Vector2 clickPosition);
-        protected delegate void MiddleMouseButtonClickTrackedDelegate(Vector2 clickPosition);
-        protected LeftMouseButtonClickTrackedDelegate LeftMouseButtonClickTracked; //Calls entire invocation list when a full click of the left mouse button occurs, e.mousePosition will be inside of rect (0, 0, currentRect.width, currentRect.height)
-        protected RightMouseButtonClickTrackedDelegate RightMouseButtonClickTracked;
-        protected MiddleMouseButtonClickTrackedDelegate MiddleMouseButtonClickTracked;
+        protected delegate void MouseButtonClickTrackedDelegate(Vector2 clickPosition);
+        protected delegate void MouseButtonDraggedDelegate(Vector2 dragPos);
+        protected MouseButtonClickTrackedDelegate LeftMouseButtonClickTracked; //Calls entire invocation list when a full click of the left mouse button occurs, e.mousePosition will be inside of rect (0, 0, currentRect.width, currentRect.height)
+        protected MouseButtonClickTrackedDelegate RightMouseButtonClickTracked;
+        protected MouseButtonClickTrackedDelegate MiddleMouseButtonClickTracked;
+        protected MouseButtonDraggedDelegate LeftMouseButtonDragged;
+        protected MouseButtonDraggedDelegate RightMouseButtonDragged;
+        protected MouseButtonDraggedDelegate MiddleMouseButtonDragged;
+        protected MouseButtonDraggedDelegate LeftMouseButtonDragEnded;
+        protected MouseButtonDraggedDelegate RightMouseButtonDragEnded;
+        protected MouseButtonDraggedDelegate MiddleMouseButtonDragEnded;
         protected const int TRACK_MOUSEBUTTON_COUNT = 3;
-        protected bool[] clickTrackMouseDown; //Track if the left mouse was recently pressed down
+        protected bool[] clickTrackMouseDown; //Track if the mouse was recently pressed down
         protected Vector2[] clickTrackMouseDownPos;
-        protected float clickTrackPosDeviation = 1.4f; //How far the mouse can move between mouseDown and mouseUp to register a click
+        protected float clickTrackPosDeviation = 0f; //d:1.4 How far the mouse can move between mouseDown and mouseUp to register a click
+        protected bool clicksTracked = false; //Flag to determine if clicksTracked has been called yet (for use in methods that depend on clicks being tracked)
 
         protected MouseCursor forcedMouseCursor; //Some actions like resizing require a mouse cursor to stay constant during the action, the cursor type is stored here.
 
@@ -44,6 +50,7 @@ namespace Fizzik {
             clickTrackMouseDown = new bool[] { false, false, false };
             clickTrackMouseDownPos = new Vector2[] { Vector2.zero, Vector2.zero, Vector2.zero };
 
+
             setCurrentRect(getDefaultRect()); //Initialization of currentRect that sets up all structures, in case loadUserSettings implementation is blank.
 
             loadUserSettings();
@@ -55,6 +62,9 @@ namespace Fizzik {
          */
         public virtual void handleGUI(int windowID) {
             editor.setCurrentMostLikelyFocusedSubwindow(windowID);
+
+            //Reset update state of clicksTracked
+            clicksTracked = false;
         }
 
         protected void dragWindow() {
@@ -66,21 +76,22 @@ namespace Fizzik {
         }
 
         /*
-         * Tracks the state of any full left mouse clicks, and calls the LeftMouseButtonClickTracked delegate when a full left mouse click is registered
-         * This method should be called at the end of the handleGUI method call if the functionality is desired.
+         * Tracks the state of any full mouse clicks, and calls the MouseButtonClickTracked delegate when a full mouse click is registered
+         * This method should be called at start of handleGUI method call if the functionality is desired.
+         * This method can be used to track state of mouseDown for all 3 mouse buttons, whether or not it was recently down
+         * and at what position it started being down at initially. Also Tracks drag events and drag ended events.
+         *
+         * Does not consume input on its own, but the delegates it calls may do so.
          */
-        protected void trackFullMouseClicks() {
+        protected void trackMouseClicksAndDrags() {
             Event e = Event.current;
 
             //Track full stationary mouse clicks
-            const int MOUSE_LEFT = 0;
-            const int MOUSE_RIGHT = 1;
-            const int MOUSE_MIDDLE = 2;
             Rect insideRect = new Rect(0, 0, currentRect.width, currentRect.height);
             for (int i = 0; i < TRACK_MOUSEBUTTON_COUNT; i++) {
                 if (!clickTrackMouseDown[i] && e.button == i && e.type == EventType.mouseDown) {
                     if (insideRect.Contains(e.mousePosition)) {
-                        //Make sure no other clicks are being processed, first come first serve for context clicking
+                        //Make sure no other clicks are being processed, first come first serve for context clicking, initiate clicks/drags
                         bool valid = true;
                         for (int v = 0; v < TRACK_MOUSEBUTTON_COUNT; v++) {
                             if (v != i) {
@@ -96,34 +107,54 @@ namespace Fizzik {
                         }
                     }
                 }
-                else if (clickTrackMouseDown[i] && e.button == i && e.type == EventType.mouseUp) {
+                else if (clickTrackMouseDown[i] && e.button == i && e.type == EventType.mouseDrag) {
+                    //Drag continued
+                    callClickTrackDraggedDelegates(i, e.mousePosition);
+                }
+
+                if (clickTrackMouseDown[i] && e.button == i && e.type == EventType.mouseUp) {
                     clickTrackMouseDown[i] = false;
 
                     if (insideRect.Contains(e.mousePosition)) {
                         float distSqr = Vector2.SqrMagnitude(e.mousePosition - clickTrackMouseDownPos[i]);
-                        if (distSqr < clickTrackPosDeviation * clickTrackPosDeviation) {
-                            switch (i) {
-                                case MOUSE_LEFT:
-                                    LeftMouseButtonClickTracked(e.mousePosition);
-                                    break;
-                                case MOUSE_RIGHT:
-                                    RightMouseButtonClickTracked(e.mousePosition);
-                                    break;
-                                case MOUSE_MIDDLE:
-                                    MiddleMouseButtonClickTracked(e.mousePosition);
-                                    break;
-                            }
+                        if (distSqr <= clickTrackPosDeviation * clickTrackPosDeviation) {
+                            //Click performed
+                            callClickTrackFullClickDelegates(i, e.mousePosition);
+                        }
+                        else {
+                            //Drag concluded
+                            callClickTrackDragEndedDelegates(i, e.mousePosition);
                         }
                     }
                 }
+            }
+
+            clicksTracked = true;
+        }
+
+        /*
+         * Wipes current tracking state for mouse clicks and drags, this is useful when an overriding action is performed
+         * like a subwindow resize, and you dont want to propagate similar events (click clicking and dragging) back to the
+         * subwindow delegates.
+         */
+        protected void wipeTrackMouseClickAndDragsState() {
+            for (int i = 0; i < TRACK_MOUSEBUTTON_COUNT; i++) {
+                clickTrackMouseDown[i] = false;
+                clickTrackMouseDownPos[i] = Vector2.zero;
             }
         }
 
         /*
          * This should be called by the sprite editor, so that drags can properly be tracked even when the mouse leaves the extends of the subwindow (do to gui matrixes and clipping)
+         * Dependant on trackFullMouseClicks() being called before it, will call it on its own if it hasnt been called yet.
          */
         public void resizeWindow() {
             if (isResizable() && (editor.getMostLikelyFocusedSubwindow() == this || resizing)) {
+                //Require clicks being tracked
+                if (!clicksTracked) {
+                    trackMouseClicksAndDrags();
+                }
+
                 Event e = Event.current;
 
                 int mouseButton = getMouseDragButton();
@@ -137,7 +168,10 @@ namespace Fizzik {
 
                         Rect editorRelativeRect = new Rect(c.x + resizeRect.x, c.y + resizeRect.y, resizeRect.width, resizeRect.height);
 
-                        if (editorRelativeRect.Contains(e.mousePosition)) {
+                        Vector2 editorRelativeClickTrackPos = clickTrackMouseDownPos[mouseButton] + c.position; 
+
+                        if (clickTrackMouseDown[mouseButton] && editorRelativeRect.Contains(editorRelativeClickTrackPos) 
+                            && editorRelativeRect.Contains(e.mousePosition)) {
                             Vector2 m = e.mousePosition;
 
                             resizeAnchor = (ResizeRects) i;
@@ -193,6 +227,8 @@ namespace Fizzik {
 
                 //Do resizing
                 if (resizing && e.type == EventType.MouseDrag) {
+                    wipeTrackMouseClickAndDragsState();
+
                     Vector2 m = e.mousePosition;
                     Vector2 off = resizeMouseOffset;
 
@@ -299,6 +335,78 @@ namespace Fizzik {
             }
             else {
                 headerRect = new Rect(0, 0, c.width, HEADER_HEIGHT);
+            }
+        }
+
+        protected void callClickTrackFullClickDelegates(int mouseButton, Vector2 clickPos) {
+            const int MOUSELEFT = 0;
+            const int MOUSERIGHT = 1;
+            const int MOUSEMIDDLE = 2;
+
+            switch (mouseButton) {
+                case MOUSELEFT:
+                    if (LeftMouseButtonClickTracked != null) {
+                        LeftMouseButtonClickTracked(clickPos);
+                    }
+                    return;
+                case MOUSERIGHT:
+                    if (RightMouseButtonClickTracked != null) {
+                        RightMouseButtonClickTracked(clickPos);
+                    }
+                    return;
+                case MOUSEMIDDLE:
+                    if (MiddleMouseButtonClickTracked != null) {
+                        MiddleMouseButtonClickTracked(clickPos);
+                    }
+                    return;
+            }
+        }
+
+        protected void callClickTrackDraggedDelegates(int mouseButton, Vector2 dragPos) {
+            const int MOUSELEFT = 0;
+            const int MOUSERIGHT = 1;
+            const int MOUSEMIDDLE = 2;
+
+            switch (mouseButton) {
+                case MOUSELEFT:
+                    if (LeftMouseButtonDragged != null) {
+                        LeftMouseButtonDragged(dragPos);
+                    }
+                    return;
+                case MOUSERIGHT:
+                    if (RightMouseButtonDragged != null) {
+                        RightMouseButtonDragged(dragPos);
+                    }
+                    return;
+                case MOUSEMIDDLE:
+                    if (MiddleMouseButtonDragged != null) {
+                        MiddleMouseButtonDragged(dragPos);
+                    }
+                    return;
+            }
+        }
+
+        protected void callClickTrackDragEndedDelegates(int mouseButton, Vector2 dragPos) {
+            const int MOUSELEFT = 0;
+            const int MOUSERIGHT = 1;
+            const int MOUSEMIDDLE = 2;
+
+            switch (mouseButton) {
+                case MOUSELEFT:
+                    if (LeftMouseButtonDragEnded != null) {
+                        LeftMouseButtonDragEnded(dragPos);
+                    }
+                    return;
+                case MOUSERIGHT:
+                    if (RightMouseButtonDragEnded != null) {
+                        RightMouseButtonDragEnded(dragPos);
+                    }
+                    return;
+                case MOUSEMIDDLE:
+                    if (MiddleMouseButtonDragEnded != null) {
+                        MiddleMouseButtonDragEnded(dragPos);
+                    }
+                    return;
             }
         }
 
