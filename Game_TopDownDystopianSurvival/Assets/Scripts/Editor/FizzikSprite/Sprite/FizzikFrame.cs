@@ -60,7 +60,7 @@ namespace Fizzik {
          * their appropriate blend modes
          */
         public void updateTexture() {
-            List<FizzikLayer> visibleLayers = layers.FindAll((layer) => { return layer.visible; });
+            List<FizzikLayer> visibleLayers = layers.FindAll((layer) => { return layer.visible && layer.opacity > 0f; });
 
             //Wipe texture
             if (texture != null) Object.DestroyImmediate(texture);
