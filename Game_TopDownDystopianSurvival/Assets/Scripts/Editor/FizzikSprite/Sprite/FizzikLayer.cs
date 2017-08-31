@@ -26,6 +26,8 @@ namespace Fizzik {
         public bool locked; //Whether or not the layer is currently locked from editing
         public string name = "Layer <Unnamed>";
 
+        public bool clean;
+
         public Texture2D texture;
 
         //Batch drawing optimizations
@@ -44,6 +46,8 @@ namespace Fizzik {
             opacity = 1f;
             visible = true;
             locked = false;
+
+            clean = true;
 
             clearBatch();
 
@@ -139,6 +143,10 @@ namespace Fizzik {
             return pixels[((imgHeight - 1 - py) * imgWidth) + px];
         }
 
+        /*
+         * Returns an array of pixels between minx,miny and maxx,maxy inclusively
+         * This is in the format that Texture2D handles pixels
+         */
         public Color[] getPixelsInArea(int minx, int miny, int maxx, int maxy) {
             int subwidth = maxx - minx + 1;
             int subheight = maxy - miny + 1;
@@ -167,6 +175,8 @@ namespace Fizzik {
             int py = Mathf.Clamp(y, 0, imgHeight - 1);
             pixels[(py * imgWidth + px)] = color;
 
+            if (color.a > 0f) clean = false;
+
             if (batch) {
                 batchPixel(px, py);
             }
@@ -187,6 +197,8 @@ namespace Fizzik {
             int px = Mathf.Clamp(x, 0, imgWidth - 1);
             int py = Mathf.Clamp(y, 0, imgHeight - 1);
             pixels[((imgHeight - 1 - py) * imgWidth) + px] = color;
+
+            if (color.a > 0f) clean = false;
 
             if (batch) {
                 batchPixel(px, imgHeight - 1 - py);
